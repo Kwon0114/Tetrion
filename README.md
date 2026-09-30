@@ -1,4 +1,3 @@
 play https://kwon0114.github.io/Tetros/
-Light html Tetros with modern kick tables similer as tetrio 
-,also can enjoy blitz mode and pc mode 
+Light html Tetros with modern all spin mini
 ,can multiplay with your friends.
