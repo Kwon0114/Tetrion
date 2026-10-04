@@ -6,6 +6,7 @@ A web-based Tetrion game featuring standard SRS rotation rules and PeerJS-powere
 <br />
 
 ## 🔥 Key Features
+- **Music mode added:** make your own music.
 - **Precise Tetrion Logic:** Implements standard SRS rotation, Wall Kicks, and 180° spins.
 - **Handling Customization:** Allows players to fine-tune DAS, ARR, and Soft Drop speeds in milliseconds.
 - **PeerJS-Powered P2P Multiplayer:** Enables low-latency 1v1 battles via direct browser-to-browser connections without a dedicated game server.
