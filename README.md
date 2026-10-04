@@ -1,7 +1,7 @@
 #  SRS TETRION
 
 A web-based Tetrion game featuring standard SRS rotation rules and PeerJS-powered P2P multiplayer.
-🔗 [**Play Game Now (Live Link)**]
+🔗 [**Play Game Now (Live Link)**]https://kwon0114.github.io/Tetrion/
 
 <br />
 
