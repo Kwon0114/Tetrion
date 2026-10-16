@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tetrion PC Finder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;800&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#000;--panel:#080a14;--line:#252b52;--ink:#e8ecff;--dim:#8790b8;--cy:#00e5ff;--mg:#ff2bd6;--mint:#39ff9a;--gold:#ffe14d;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:600 15px/1.5 'Nunito',system-ui,sans-serif}
+main{max-width:520px;margin:0 auto;padding:16px 14px 40px}
+h1{font:800 26px 'Baloo 2',sans-serif;margin:0 0 2px;color:var(--cy);text-shadow:0 0 16px rgba(0,229,255,.5)}
+.sub{color:var(--dim);margin:0 0 16px;font-size:13px}
+section{background:var(--panel);box-shadow:0 0 0 1px rgba(0,229,255,.28),0 0 22px rgba(0,229,255,.1);padding:14px;margin-bottom:14px}
+h2{font:800 16px 'Baloo 2',sans-serif;margin:0 0 10px;color:var(--ink)}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px}
+label{color:var(--dim);font-size:13px}
+input[type=text],select{background:#0c0f1e;border:1px solid var(--line);color:var(--ink);padding:8px 10px;font:inherit;border-radius:0;min-width:0}
+input[type=text]{flex:1;min-width:120px;letter-spacing:.12em;text-transform:uppercase}
+button{font:800 14px 'Baloo 2',sans-serif;background:#10142a;color:var(--ink);border:1px solid var(--line);padding:8px 14px;cursor:pointer;border-radius:0}
+button:hover{border-color:var(--cy)}
+button.go{background:var(--mg);border-color:var(--mg);color:#000;flex:1;font-size:16px}
+button.stop{background:transparent;border-color:var(--gold);color:var(--gold)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+canvas{display:block;margin:0 auto;background:#05060d;border:1px solid var(--line);touch-action:none;max-width:100%}
+#status{margin-top:10px;font-size:13px;color:var(--dim);min-height:20px}
+#status.ok{color:var(--mint)}#status.bad{color:var(--mg)}
+.sols{max-height:240px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.sol{text-align:left;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sol.on{border-color:var(--mint);box-shadow:0 0 12px rgba(57,255,154,.3)}
+.pc{display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;font:800 12px 'Baloo 2';color:#000}
+.pc.h{outline:2px solid var(--gold)}
+.pc.s{text-decoration:underline;text-underline-offset:2px}
+#cap{text-align:center;margin-top:10px;font:800 15px 'Baloo 2'}
+.ctl{display:flex;gap:8px;justify-content:center;margin-top:10px}
+.ctl button{min-width:64px}
+.hint{color:var(--dim);font-size:12px;margin-top:8px}
+button.i{min-width:0;width:18px;height:18px;padding:0;border-radius:50%;font:800 11px/16px 'Baloo 2',sans-serif;color:var(--cy);border-color:var(--cy);background:transparent;margin-left:2px}
+button.i[aria-expanded=true]{background:var(--cy);color:#000}
+.help{background:#0c0f1e;border-left:2px solid var(--cy);padding:8px 10px;margin-top:6px;font-size:12px;color:var(--dim);line-height:1.65}
+.help[hidden]{display:none}
+.help b{color:var(--ink)}.help code{color:var(--gold);letter-spacing:.04em;font-family:ui-monospace,monospace}
+.help ul{margin:4px 0 0;padding-left:16px}.help li{margin:2px 0}
+.grp{margin-top:12px}.grp .row{margin-top:4px}
+.gt{font:800 12px 'Baloo 2',sans-serif;color:var(--cy);letter-spacing:.03em}
+</style>
+</head>
+<body>
+<main>
+<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+<h1>PC Finder</h1>
+<button id="lang" style="font:800 12px 'Baloo 2',sans-serif;background:#10142a;color:var(--ink);border:1px solid var(--line);padding:5px 10px;cursor:pointer;border-radius:0">EN</button>
+</div>
+<p class="sub" id="subp">Tetrion의 SRS 회전·킥 규칙(180° 포함)으로 퍼펙트 클리어를 찾습니다.</p>
+
+<section>
+<h2 id="h2board">보드</h2>
+<canvas id="ed"></canvas>
+<div class="hint" id="hint6" style="display:none;color:var(--gold)">퍼클 탐색은 아래쪽 8줄까지만 지원합니다. 9줄 이상 쌓인 보드는 8줄 안에서 끝나는 해만 찾아요.</div>
+<div class="hint" id="hintDrag">칸을 누르거나 드래그해서 블록을 채우고 지웁니다. 맨 아래가 바닥입니다.</div>
+<div class="row">
+<label for="hh" id="lblHeight">높이</label><button id="hm" aria-label="높이 줄이기">−</button><input id="hh" type="number" min="2" max="12" value="4" inputmode="numeric" style="width:56px;background:#0c0f1e;border:1px solid var(--line);color:var(--ink);padding:8px 6px;font:inherit;text-align:center"><button id="hp" aria-label="높이 늘리기">+</button>
+<button id="clr">비우기</button>
+</div>
+<div class="row"><input id="fmin" type="text" spellcheck="false" autocomplete="off" placeholder="후멘 코드 붙여넣기 (v115@…)" style="flex:1;min-width:0;background:#0c0f1e;border:1px solid var(--line);color:var(--ink);padding:8px 10px;font:inherit"><button id="fmload">가져오기</button></div>
+</section>
+
+<section>
+<h2 id="h2piece">피스</h2>
+<div class="row"><label for="q" id="lblNext">넥스트</label><button class="i" data-h="hQueue" aria-label="넥스트 문법 설명" aria-expanded="false">i</button><input id="q" type="text" spellcheck="false" autocomplete="off"><button id="rnd">랜덤 2백</button></div>
+<div class="hint" id="hintBracket"></div>
+<div class="help" id="hQueue" hidden></div>
+<div class="grp"><span class="gt" id="gtBase">기본</span><button class="i" data-h="hBase" aria-label="설명" aria-expanded="false">i</button>
+<div class="row">
+<label><input type="checkbox" id="uh" checked> <span id="lblUseHold">홀드 사용</span></label>
+<label><input type="checkbox" id="u180"> <span id="lblRot180">180° 회전</span></label>
+<label><input type="checkbox" id="usp" checked> <span id="lblSpin">스핀·틱 포함</span></label>
+<label><input type="checkbox" id="po"> <span id="lblProbOnly">확률만 (빠름)</span></label>
+</div><div class="help" id="hBase" hidden></div></div>
+<div class="grp"><span class="gt" id="lblParity">페리티 검사</span><button class="i" data-h="hPar" aria-label="설명" aria-expanded="false">i</button>
+<div class="row">
+<label><input type="checkbox" id="parV"> <span id="lblParV">버티컬</span></label>
+<label><input type="checkbox" id="parC"> <span id="lblParC">4색</span></label>
+<label><input type="checkbox" id="parK"> <span id="lblParK">체커보드(1차만)</span></label>
+</div><div class="hint" id="warnPar" style="display:none;color:var(--gold)"></div><div class="help" id="hPar" hidden></div></div>
+<div class="grp"><span class="gt" id="gtStage">탐색 단계</span><button class="i" data-h="hStage" aria-label="설명" aria-expanded="false">i</button>
+<div class="row">
+<label><input type="checkbox" id="u15" checked> <span id="lbl15">1.5차</span></label>
+<select id="r15" aria-label="1.5차 줄 선택"><option value="even">짝수 줄</option><option value="odd">홀수 줄</option><option value="both">짝+홀</option><option value="all">모든 부분집합(느림)</option><option value="multi">다단계(완전, 2차 대체)</option></select>
+<label><input type="checkbox" id="s15" checked> <span id="lblS15">1.5차 푼 큐 2차 생략</span></label>
+<label><input type="checkbox" id="a15"> <span id="lblA15">2단계 방식(실험)</span></label>
+</div><div class="help" id="hStage" hidden></div></div>
+<div class="row"><button class="go" id="go">퍼펙트 클리어 찾기</button><button class="stop" id="stop" style="display:none">중지</button></div>
+<div id="status"></div>
+</section>
+
+<section id="res" style="display:none">
+<h2 id="h2result">결과</h2>
+<div class="row" style="margin:0 0 10px"><button id="mn" class="stop" style="display:none"></button><button id="fm">후멘 복사</button></div>
+<textarea id="fmbox" readonly rows="3" style="display:none;width:100%;margin:0 0 10px;background:#0c0f1e;border:1px solid var(--line);color:var(--ink);font:12px monospace;padding:6px;box-sizing:border-box"></textarea>
+<div class="hint" id="mnh" style="margin:-4px 0 10px"></div>
+<div class="sols" id="sols"></div>
+<canvas id="vw"></canvas>
+<div id="cap"></div>
+<div class="ctl"><button id="pv">◀</button><button id="pl">재생</button><button id="nx">▶</button></div>
+</section>
+</main>
+
+<script id="app">
+(function(){
+"use strict";
+//ENGINE_START
+const COLS=10, BUF=4, CELL=26, MAXL=8;
+  const COLORS = {
+    I: '#68d7cd', O: '#f6d975', T: '#c995fc', S: '#8ddd9f',
+    Z: '#ff8080', J: '#729df1', L: '#ffb26a', G: '#5a6472'
+  };
+  const SHAPES = {
+    I: { size:4, states:[
+      [[0,1],[1,1],[2,1],[3,1]], [[2,0],[2,1],[2,2],[2,3]],
+      [[0,2],[1,2],[2,2],[3,2]], [[1,0],[1,1],[1,2],[1,3]] ] },
+    O: { size:4, states:[
+      [[1,0],[2,0],[1,1],[2,1]], [[1,0],[2,0],[1,1],[2,1]],
+      [[1,0],[2,0],[1,1],[2,1]], [[1,0],[2,0],[1,1],[2,1]] ] },
+    T: { size:3, states:[
+      [[1,0],[0,1],[1,1],[2,1]], [[1,0],[1,1],[2,1],[1,2]],
+      [[0,1],[1,1],[2,1],[1,2]], [[1,0],[0,1],[1,1],[1,2]] ] },
+    S: { size:3, states:[
+      [[1,0],[2,0],[0,1],[1,1]], [[1,0],[1,1],[2,1],[2,2]],
+      [[1,1],[2,1],[0,2],[1,2]], [[0,0],[0,1],[1,1],[1,2]] ] },
+    Z: { size:3, states:[
+      [[0,0],[1,0],[1,1],[2,1]], [[2,0],[1,1],[2,1],[1,2]],
+      [[0,1],[1,1],[1,2],[2,2]], [[1,0],[0,1],[1,1],[0,2]] ] },
+    J: { size:3, states:[
+      [[0,0],[0,1],[1,1],[2,1]], [[1,0],[2,0],[1,1],[1,2]],
+      [[0,1],[1,1],[2,1],[2,2]], [[1,0],[1,1],[0,2],[1,2]] ] },
+    L: { size:3, states:[
+      [[2,0],[0,1],[1,1],[2,1]], [[1,0],[1,1],[1,2],[2,2]],
+      [[0,1],[1,1],[2,1],[0,2]], [[0,0],[1,0],[1,1],[1,2]] ] }
+  };
+  const KICKS_JLSTZ = {
+    "0>1": [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+    "1>0": [[0,0],[1,0],[1,1],[0,-2],[1,-2]],
+    "1>2": [[0,0],[1,0],[1,1],[0,-2],[1,-2]],
+    "2>1": [[0,0],[-1,0],[-1,-1],[0,2],[-1,2]],
+    "2>3": [[0,0],[1,0],[1,-1],[0,2],[1,2]],
+    "3>2": [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+    "3>0": [[0,0],[-1,0],[-1,1],[0,-2],[-1,-2]],
+    "0>3": [[0,0],[1,0],[1,-1],[0,2],[1,2]]
+  };
+  // TETR.IO SRS+ uses a symmetric I-piece 90-degree kick table rather than
+  // the asymmetric Guideline SRS I table.
+  const KICKS_I = {
+    "0>1": [[0,0],[1,0],[-2,0],[-2,1],[1,-2]],
+    "1>2": [[0,0],[-1,0],[2,0],[-1,-2],[2,1]],
+    "2>3": [[0,0],[2,0],[-1,0],[2,-1],[-1,2]],
+    "3>0": [[0,0],[1,0],[-2,0],[1,2],[-2,-1]],
+    "0>3": [[0,0],[-1,0],[2,0],[2,1],[-1,-2]],
+    "1>0": [[0,0],[-1,0],[2,0],[-1,2],[2,-1]],
+    "2>1": [[0,0],[-2,0],[1,0],[-2,-1],[1,2]],
+    "3>2": [[0,0],[1,0],[-2,0],[1,-2],[-2,1]]
+  };
+  // TETR.IO's default SRS+ adds direction-dependent 180-degree kicks instead
+  // of one generic table: JLSTZ get six tests per facing, I gets two, and O
+  // never meaningfully rotates.
+  const KICKS_180_JLSTZ = {
+    0: [[0,0],[0,-1],[1,-1],[-1,-1],[1,0],[-1,0]],
+    1: [[0,0],[1,0],[1,-2],[1,-1],[0,-2],[0,-1]],
+    2: [[0,0],[0,1],[-1,1],[1,1],[-1,0],[1,0]],
+    3: [[0,0],[-1,0],[-1,-2],[-1,-1],[0,-2],[0,-1]]
+  };
+  const KICKS_180_I = {
+    0: [[0,0],[0,-1]],
+    1: [[0,0],[1,0]],
+    2: [[0,0],[0,1]],
+    3: [[0,0],[-1,0]]
+  };
+  const KICK_KEYS = ['0>0','0>1','0>2','0>3','1>0','1>1','1>2','1>3','2>0','2>1','2>2','2>3','3>0','3>1','3>2','3>3'];
+  function getKicks(type, from, to){
+    if (type === 'O') return [[0,0]];
+    const table = type === 'I' ? KICKS_I : KICKS_JLSTZ;
+    return table[KICK_KEYS[from*4+to]] || [[0,0]];
+  }
+  // 180-degree kicks are keyed by the piece's facing before the turn (not by
+  // a from>to pair — TETR.IO's table is direction-dependent, not symmetric).
+  function get180Kicks(type, from){
+    if (type === 'O') return [[0,0]];
+    const table = type === 'I' ? KICKS_180_I : KICKS_180_JLSTZ;
+    return table[from] || [[0,0]];
+  }
+
+//LOGIC_START
+const SEEN=new Uint8Array(1100);
+// Per piece/rotation: row masks (so a collision test is a few ANDs) + column bounds
+const PM={};
+for(const t of Object.keys(SHAPES)) PM[t]=SHAPES[t].states.map(cs=>{
+  const m={};let lo=9,hi=0,y0=9;
+  for(const [cx,cy] of cs){m[cy]=(m[cy]||0)|(1<<cx);lo=Math.min(lo,cx);hi=Math.max(hi,cx);y0=Math.min(y0,cy);}
+  const g=[];for(const k in m)g.push(+k,m[k]);
+  // numeric id parts: bounding-box origin (lo,y0) + packed sorted cell offsets (no strings/arrays in the hot paths)
+  const offs=cs.map(([cx,cy])=>(cy-y0)*10+(cx-lo)).sort((a,b)=>a-b);
+  const sig=((offs[0]*128+offs[1])*128+offs[2])*128+offs[3];
+  return {g,lo,hi,y0,sig};
+});
+const SIGM=268435456;   // 128^4: a placement id = (top*10+left)*SIGM + sig
+let _mx=0,_my=0;
+// Packed shape signature of 4 cells [[x,y],..] (sorted offsets from the bounding-box origin); leaves the origin in _mx/_my.
+function sigOf(cs){
+  let mx=99,my=99;
+  for(let i=0;i<4;i++){const c=cs[i];if(c[0]<mx)mx=c[0];if(c[1]<my)my=c[1];}
+  let a=(cs[0][1]-my)*10+cs[0][0]-mx,b=(cs[1][1]-my)*10+cs[1][0]-mx,c=(cs[2][1]-my)*10+cs[2][0]-mx,d=(cs[3][1]-my)*10+cs[3][0]-mx,t;
+  if(a>b){t=a;a=b;b=t;} if(c>d){t=c;c=d;d=t;} if(a>c){t=a;a=c;c=t;} if(b>d){t=b;b=d;d=t;} if(b>c){t=b;b=c;c=t;}
+  _mx=mx;_my=my;
+  return ((a*128+b)*128+c)*128+d;
+}
+const cellsId=cs=>{const q=sigOf(cs);return (_my*10+_mx)*SIGM+q;};
+const fits=(rows,t,r,x,y,B)=>{
+  const P=PM[t][r];
+  if(x+P.lo<0||x+P.hi>=COLS) return false;
+  const g=P.g;
+  for(let i=0;i<g.length;i+=2){
+    const Y=y+g[i];
+    if(Y<0||Y>=B) return false;
+    if(rows[Y]&(x>=0?g[i+1]<<x:g[i+1]>>-x)) return false;
+  }
+  return true;
+};
+// Every lock position reachable via move / soft drop / rotate (SRS kicks).
+// Above the stack the piece moves freely, so all (x,rotation) pairs are seeded at the top.
+// Straight hard drops (rotate/shift above the stack, then drop): cheap, no search.
+function hardDrops(rows,t,B){
+  const out=new Map();
+  for(let r=0;r<4;r++){
+    const P=PM[t][r];
+    for(let x=-P.lo;x+P.hi<COLS;x++){
+      if(!fits(rows,t,r,x,0,B)) continue;
+      let y=0;while(fits(rows,t,r,x,y+1,B)) y++;
+      if(y+P.y0>=BUF){
+        const k=((y+P.y0)*10+(x+P.lo))*SIGM+P.sig;
+        if(!out.has(k)) out.set(k,SHAPES[t].states[r].map(([a,b])=>[a+x,b+y]));
+      }
+    }
+  }
+  return out;
+}
+// Hard drops first; with spin=true also adds placements that need sliding/tucks/spins (flagged cs.spin).
+const D90=[1,3],D180=[1,3,2];
+function placements(rows,t,u180,B,spin){
+  const out=hardDrops(rows,t,B);
+  if(!spin) return [...out.values()];
+  const seen=SEEN, st=[];
+  seen.fill(0);
+  const top=rows.findIndex(v=>v), free=(top<0?B:top)-5;   // box bottom stays 2+ rows above the stack, so no piece can lock at y<=free
+  const push=(x,y,r)=>{const k=((x+6)*16+y)*4+r;if(!seen[k]){seen[k]=1;st.push(x,y,r);}};
+  for(let r=0;r<4;r++) for(let x=-2;x<COLS;x++) if(fits(rows,t,r,x,0,B)) push(x,0,r);
+  const states=SHAPES[t].states, PMt=PM[t], dirs=u180?D180:D90;
+  while(st.length){
+    const r=st.pop(), y=st.pop(), x=st.pop();
+    const canDown=fits(rows,t,r,x,y+1,B);
+    if(canDown) push(x,y+1,r);
+    if(y<=free) continue;
+    if(fits(rows,t,r,x-1,y,B)) push(x-1,y,r);
+    if(fits(rows,t,r,x+1,y,B)) push(x+1,y,r);
+    if(!canDown){
+      const P=PMt[r];
+      if(y+P.y0>=BUF){
+        const k=((y+P.y0)*10+(x+P.lo))*SIGM+P.sig;
+        if(!out.has(k)){const cs=states[r].map(([a,b])=>[a+x,b+y]);cs.spin=true;out.set(k,cs);}
+      }
+    }
+    for(const d of dirs){
+      const nr=(r+d)%4, ks=d===2?get180Kicks(t,r):getKicks(t,r,nr);
+      for(const [kx,ky] of ks) if(fits(rows,t,nr,x+kx,y+ky,B)){push(x+kx,y+ky,nr);break;}
+    }
+  }
+  return [...out.values()];
+}
+const popc=v=>{let c=0;while(v){c+=v&1;v>>=1;}return c;};
+const POP=new Uint8Array(1024);for(let i=1;i<1024;i++) POP[i]=POP[i>>1]+(i&1);
+const CR=new Uint8Array(64), CB=new Int32Array(64);   // cell index -> row / column bit
+for(let i=0;i<64;i++){CR[i]=(i/COLS)|0;CB[i]=1<<(i%COLS);}
+
+// ================= sfinder-style search =================
+// Phase 1 ("path"): every way to tile the cleared region with the available pieces (also pieces split by already-cleared lines), independent of piece order.
+// Phase 2 ("percent"): for each queue, check whether a tiling can be built in an order the queue/hold allows.
+// Model: the unrolled (pre-clear) picture; a piece's rows may be separated by lines that were cleared before it was placed.
+const ORI={};
+for(const t of Object.keys(SHAPES)){
+  const seen=new Set();ORI[t]=[];
+  for(const st of SHAPES[t].states){
+    const s=st.slice().sort((a,b)=>a[1]-b[1]||a[0]-b[0]);
+    const o=s.map(([x,y])=>[x-s[0][0],y-s[0][1]]), k=o.map(c=>c.join()).join('|');
+    if(!seen.has(k)){seen.add(k);o.h=o[o.length-1][1]+1;ORI[t].push(o);}
+  }
+}
+const TYPES='IOTSZJL';
+// A piece as it sits on the (already cleared) board, ignoring where it is: used to reject pieces whose rows are not adjacent yet
+const SHKN={};for(const t of TYPES) SHKN[t]=new Set(SHAPES[t].states.map(sigOf));
+const TIDX={I:0,O:1,T:2,S:3,Z:4,J:5,L:6};
+const IDENT=[[],[0],[0,1],[0,1,2],[0,1,2,3]];
+// every way to spread an h-row piece over rows 0..m of the unrolled picture (rows in between are cleared lines)
+const ROWMAPS=new Map();
+function rowMaps(h,m){
+  const key=h*64+m;let r=ROWMAPS.get(key);if(r) return r;
+  r=[];
+  (function go(c){
+    if(c.length===h){r.push(c.slice());return;}
+    for(let u=c[c.length-1]+1;u<=m;u++){c.push(u);go(c);c.pop();}
+  })([0]);
+  ROWMAPS.set(key,r);return r;
+}
+const TCACHE=new Map();   // tilings (and their order-check caches) survive between runs on the same board
+// For each cell of an L-row picture: every piece placement (also split over cleared rows) that covers it. Built once per L.
+const PLCACHE=new Map();
+function placeLists(L){
+  let r=PLCACHE.get(L);if(r) return r;
+  const W=COLS;r=Array.from({length:L*W},()=>[]);const seenK=new Set();
+  for(const t of TYPES) for(const ori of ORI[t]) for(let ax=-3;ax<W;ax++) for(let ay=0;ay<L;ay++){
+    for(const U of rowMaps(ori.h,L-1-ay)){
+      const c=[];let ok=true;
+      for(const [dx,dy] of ori){const x=ax+dx,y=ay+U[dy];if(x<0||x>=W||y>=L){ok=false;break;}c.push(y*W+x);}
+      if(!ok) continue;
+      const k=t+c.slice().sort((m,n)=>m-n).join();
+      if(seenK.has(k)) continue;seenK.add(k);
+      const q={t,c};for(const x of c) r[x].push(q);
+    }
+  }
+  const nb=Array.from({length:L*W},()=>new Set());
+  for(let c=0;c<L*W;c++) for(const q of r[c]) for(const x of q.c) if(x!==c) nb[c].add(x);
+  r.nb=nb.map(st=>[...st]);
+  PLCACHE.set(L,r);return r;
+}
+// Per anchor cell (first empty cell in reading order): every placement whose top-left cell is that anchor, with its 4 cell indices. Built once per L.
+const ANCACHE=new Map();
+function anchorLists(L,split){
+  const key=L*2+(split?1:0);let r=ANCACHE.get(key);if(r) return r;
+  const W=COLS;r=Array.from({length:L*W},()=>[]);
+  for(let pos=0;pos<L*W;pos++){
+    const ax=pos%W,ay=(pos-ax)/W,m=L-1-ay;
+    for(const t of TYPES) for(const ori of ORI[t]){
+      const maps=split?rowMaps(ori.h,m):(ori.h-1<=m?[IDENT[ori.h]]:[]);
+      for(const U of maps){
+        const c=[];let ok=true;
+        for(const [dx,dy] of ori){const x=ax+dx,y=ay+U[dy];if(x<0||x>=W||y>=L){ok=false;break;}c.push(y*W+x);}
+        if(ok) r[pos].push({t,c,sp:U[ori.h-1]!==ori.h-1?1:0});
+      }
+    }
+  }
+  ANCACHE.set(key,r);return r;
+}
+// 1.5 pass: split pieces are only allowed when the rows they skip are all in the set R of rows that are cleared first (single-stage clear),
+// and a split piece may not itself occupy a row of R (those rows are gone when it is placed). Contiguous pieces are always allowed.
+// rmask: bit r = picture row r (0 = top). Piece cell index v = row*COLS+x.
+function pieceOKR(c,rmask){
+  const W=COLS;let rows=0,lo=99,hi=-1;
+  for(let i=0;i<4;i++){const r=(c[i]/W)|0;rows|=1<<r;if(r<lo)lo=r;if(r>hi)hi=r;}
+  const gaps=(((1<<(hi+1))-1)^((1<<lo)-1))&~rows;
+  if(!gaps) return true;
+  return (gaps&~rmask)===0&&(rows&rmask)===0;
+}
+const ANRC=new Map(), PLRC=new Map();
+function anchorListsR(L,rmask){
+  const key=L*8192+rmask;let r=ANRC.get(key);if(r) return r;
+  r=anchorLists(L,true).map(lst=>lst.filter(q=>pieceOKR(q.c,rmask)));
+  ANRC.set(key,r);return r;
+}
+function placeListsR(L,rmask,base){
+  const key=L*8192+rmask;let r=PLRC.get(key);if(r) return r;
+  r=base.map(lst=>lst.filter(q=>pieceOKR(q.c,rmask)));r.nb=base.nb;   // neighbour lists of the full set: a superset, still sound
+  PLRC.set(key,r);return r;
+}
+// candidate sets R for a picture of L rows. mode: even = 2nd,4th.. line from the bottom, odd = 1st,3rd.., both, all = every non-empty subset
+function rMasksFor(L,mode){
+  if(L<3) return [];
+  let e=0,d=0;for(let r=0;r<L;r++){if((L-1-r)&1) e|=1<<r;else d|=1<<r;}
+  if(mode==='odd') return [d];
+  if(mode==='both') return [e,d];
+  if(mode==='all'&&L>8) mode='both';
+  if(mode==='all'){const a=[];for(let m=1;m<(1<<L);m++) a.push(m);return a;}
+  return [e];
+}
+// ================= parity pruning (PC INFO KOREA: 체커보드 / 버티컬 / 4색 패리티) =================
+// Every empty cell gets a vector of character values; a tiling's pieces must add up to the vector of the empty region:
+//   D2 = (-1)^x            vertical parity (L/J and vertical T are odd, vertical I = +-4)
+//   A,B = Re/Im of i^x     4-colour parity (columns mod 4); D2 + A,B together are the full set of column characters
+//   K  = (-1)^(x+y)        checkerboard parity (T is odd): only valid while pieces are contiguous (pass 1)
+// Column characters ignore rows, so they stay valid for pieces split by cleared lines (pass 2); the checkerboard does not.
+// Instead of hand-written rules, the values every piece type can take are enumerated from its real orientations, so this is exact (a necessary condition, never drops a real solution).
+const PS=256;
+let PARM={v:1,c:1,k:1};   // which parity characters are in use: v = vertical (-1)^x, c = 4-colour i^x, k = checkerboard
+const mstr=M=>''+M.v+M.c+M.k;
+const pmStr=()=>mstr(PARM);
+const wcode=(x,y,withK,M)=>{const a=[[1,0],[0,1],[-1,0],[0,-1]][x&3];return (M.v?((x&1)?-1:1)*PS*PS*PS:0)+(M.c?a[0]*PS*PS+a[1]*PS:0)+(withK&&M.k?(((x+y)&1)?-1:1):0);};
+const PVEC=new Map();
+function pieceVecs(withK,M){
+  const pkey=withK+mstr(M);let r=PVEC.get(pkey);if(r) return r;
+  r={};
+  for(const t of TYPES){
+    const s=new Set();
+    for(const ori of ORI[t]) for(let ax=0;ax<4;ax++) for(let ay=0;ay<2;ay++){
+      let v=0;for(const [dx,dy] of ori) v+=wcode(ax+dx,ay+dy,withK,M);
+      s.add(v);
+    }
+    r[t]=[...s];
+  }
+  PVEC.set(pkey,r);return r;
+}
+const REACH=new Map(), PSUM=new Map();
+// all vector sums of k pieces of type t (same type repeated)
+function pieceSums(pk,M,t,k){
+  const key=pk+t;let a=PSUM.get(key);if(!a){a=[[0]];PSUM.set(key,a);}
+  const pv=pieceVecs(pk[0]==='a',M)[t];
+  while(a.length<=k){const st=new Set();for(const p of a[a.length-1]) for(const v of pv) st.add(p+v);a.push([...st]);}
+  return a[k];
+}
+// Pass 1 (phase2=false): pieces are contiguous in the unrolled picture (strict region check prunes hard).
+// Pass 2 (phase2=true): at least one piece is split by lines that were already cleared when it is placed (no region check).
+// Only tilings that can actually be built in some order (orderable) are kept.
+// parity is only checked while at most this many pieces are still to be placed
+const PAR_LEFT=2;     // full channel (vertical+4-colour+checkerboard as selected)
+const PARV_LEFT=5;    // vertical-only channel: cheap integer state, so it is checked much earlier (more pieces still to come)
+// multi-stage clears: a split piece P skips the rows G and occupies the rows S. G must be cleared before P is placed and S can only be cleared after it,
+// so every row of G precedes every row of S. The pieces of one tiling must keep this 'cleared before' relation free of cycles (necessary condition).
+function splitRows(q){
+  if(q.rs!==undefined) return q;
+  let rs=0,lo=99,hi=-1;for(let i=0;i<4;i++){const y=(q.c[i]/COLS)|0;rs|=1<<y;if(y<lo)lo=y;if(y>hi)hi=y;}
+  q.rs=rs;q.gp=(((1<<(hi+1))-1)^((1<<lo)-1))&~rs;return q;
+}
+function* tilings(rows0,H,L,n,avail,o,ctx,phase2,rmask,prec){
+  const W=COLS,N=L*W,filled=new Uint8Array(N),out=[];
+  for(let r=0;r<BUF+H-L;r++) if(rows0[r]) return out;
+  const em=new Int32Array(L).fill(1023);   // empty-cell mask per row, kept in step with `filled`
+  for(let ry=0;ry<L;ry++) for(let x=0;x<W;x++) if((rows0[BUF+H-L+ry]>>x)&1){filled[ry*W+x]=1;em[ry]&=~(1<<x);}
+  const used={I:0,O:0,T:0,S:0,Z:0,J:0,L:0}, cur=[];
+  // used-piece counts packed in mixed radix (cheap numeric memo key)
+  const mult={};let prod=1;for(const t of TYPES){mult[t]=prod;prod*=avail[t]+1;}
+  if(prod*2>1048576) throw new Error('피스 수가 너무 많습니다. / Too many piece types.');
+  let ukey=0;
+  // parity state: vector sum of the still-empty cells, and the set of sums that the remaining (n-d) pieces could reach (memo per used-piece key)
+  // two parity channels: ch1 = full selected set (checked when <= PAR_LEFT pieces remain), ch2 = vertical only (checked when <= PARV_LEFT remain)
+  const M1=(PARM.c||PARM.k)?PARM:null, M2=PARM.v?{v:1,c:0,k:0}:null;
+  const mkCh=M=>{
+    const ch={M,WC:new Float64Array(N),vec:0,memo:new Map(),pk:(phase2?'b':'a')+(M?mstr(M):'000')};
+    if(M){for(let v=0;v<N;v++){ch.WC[v]=wcode(v%W,(v/W)|0,!phase2,M);if(!filled[v]) ch.vec+=ch.WC[v];}}
+    return ch;
+  };
+  const C1=mkCh(M1), C2=mkCh(M2), WC=C1.WC, WC2=C2.WC;
+  let vec=C1.vec, vec2=C2.vec;
+  // reachable vector sums of choosing m pieces out of the remaining ones; shared between runs (key = remaining counts + m)
+  const reachOf=(ch,dd)=>{
+    let r=ch.memo.get(ukey);if(r) return r;
+    const m=n-dd;let key=ch.pk+m;for(const t of TYPES) key+=','+(avail[t]-used[t]);
+    r=REACH.get(key);
+    if(!r){
+      let cur=new Array(m+1).fill(null);cur[0]=new Set([0]);
+      for(const t of TYPES){
+        const rem=avail[t]-used[t];if(rem<=0) continue;
+        const nx=new Array(m+1).fill(null);
+        for(let j=0;j<=m;j++){
+          if(!cur[j]) continue;
+          for(let k=0;k<=rem&&j+k<=m;k++){
+            const arr=pieceSums(ch.pk,ch.M,t,k);let tg=nx[j+k];if(!tg) tg=nx[j+k]=new Set();
+            for(const p of cur[j]) for(let i=0;i<arr.length;i++) tg.add(p+arr[i]);
+          }
+        }
+        cur=nx;
+      }
+      r=cur[m]||new Set();
+      if(REACH.size>20000) REACH.clear();
+      REACH.set(key,r);
+    }
+    ch.memo.set(ukey,r);return r;
+  };
+  // Pass 1: every empty region must still have a size divisible by 4 (bit-row flood fill, no allocation)
+  const tE=new Int32Array(L), tC=new Int32Array(L);
+  const regionsOK=()=>{
+    for(let y=0;y<L;y++) tE[y]=em[y];
+    for(let y0=0;y0<L;y0++){
+      while(tE[y0]){
+        const seed=tE[y0]&-tE[y0];
+        for(let y=0;y<L;y++) tC[y]=0;
+        tC[y0]=seed;tE[y0]^=seed;
+        let ch=true;
+        while(ch){
+          ch=false;
+          for(let y=0;y<L;y++){
+            let nb=(tC[y]<<1)|(tC[y]>>1);
+            if(y>0) nb|=tC[y-1];
+            if(y<L-1) nb|=tC[y+1];
+            let g=nb&tE[y];
+            if(g){
+              ch=true;
+              while(g){tE[y]&=~g;tC[y]|=g;g=((g<<1)|(g>>1))&tE[y];}
+            }
+          }
+        }
+        let cnt=0;for(let y=0;y<L;y++) cnt+=POP[tC[y]];
+        if(cnt&3) return false;
+      }
+    }
+    return true;
+  };
+  // split pass: every empty cell must still be coverable by some piece placement made of empty cells (sound, replaces the region check)
+  const PL0=placeLists(L), PL=rmask!=null?placeListsR(L,rmask,PL0):PL0, AN=rmask!=null?anchorListsR(L,rmask):anchorLists(L,!!phase2);
+  const coverable=s=>{
+    const lst=PL[s];
+    for(let i=0;i<lst.length;i++){
+      const q=lst[i];
+      if(used[q.t]>=avail[q.t]) continue;
+      const c=q.c;
+      if(!filled[c[0]]&&!filled[c[1]]&&!filled[c[2]]&&!filled[c[3]]) return true;
+    }
+    return false;
+  };
+  // after placing cells c of type t: a cell can only have become uncoverable if it shares a placement with c, or if t just ran out
+  const deadNear=(c,t,from)=>{
+    if(used[t]>=avail[t]){for(let s=from;s<N;s++) if(!filled[s]&&!coverable(s)) return true;return false;}
+    for(let i=0;i<4;i++){const nb=PL.nb[c[i]];for(let j=0;j<nb.length;j++){const n=nb[j];if(!filled[n]&&!coverable(n)) return true;}}
+    return false;
+  };
+  // memo of sub-problems that cannot be completed: same filled cells + same pieces used + same 'has a split piece' flag
+  // (numeric keys: Map<lo bits, Set<hi bits * 2^20 + used*2 + splitFlag>>)
+  let lo=0,hi=0,leaves=0;const dead=new Map(), deadG=new Map();   // deadG: dead states that depend on the precedence relation (key includes it)
+  // before[r] = rows that must be cleared strictly before row r (transitive); bst keeps the copy to restore per depth
+  const before=prec?new Int32Array(L):null, bst=prec?new Int32Array((n+2)*L):null, fgk=prec?new Array(n+2):null;
+  const applyPrec=(dd,q)=>{
+    splitRows(q);
+    for(let r=0;r<L;r++) bst[dd*L+r]=before[r];
+    for(let g=0;g<L;g++){
+      if(!((q.gp>>g)&1)) continue;
+      const nb=before[g]|(1<<g);
+      for(let s2=0;s2<L;s2++){
+        if(!((q.rs>>s2)&1)) continue;
+        for(let y=0;y<L;y++) if(y===s2||((before[y]>>s2)&1)) before[y]|=nb;
+      }
+    }
+    for(let y=0;y<L;y++) if((before[y]>>y)&1){for(let r=0;r<L;r++) before[r]=bst[dd*L+r];return false;}
+    return true;
+  };
+  for(let c=0;c<N;c++) if(filled[c]){if(c<30)lo|=1<<c;else hi|=1<<(c-30);}
+  const place=c=>{for(let k=0;k<4;k++){const v=c[k];filled[v]=1;vec-=WC[v];vec2-=WC2[v];em[CR[v]]^=CB[v];if(v<30)lo^=1<<v;else hi^=1<<(v-30);}};
+  const unplace=c=>{for(let k=0;k<4;k++){const v=c[k];filled[v]=0;vec+=WC[v];vec2+=WC2[v];em[CR[v]]^=CB[v];if(v<30)lo^=1<<v;else hi^=1<<(v-30);}};
+  let work=0,splits=0;const allowSplit=!!phase2;
+  // iterative depth-first search (depth == pieces placed); one flat generator, no recursive yield* chain
+  const fpos=new Int16Array(n+2),fli=new Int32Array(n+2),fl0=new Int32Array(n+2),flo=new Int32Array(n+2),fkey=new Float64Array(n+2),fq=new Array(n+2);
+  const undo=d=>{const q=fq[d];cur.pop();splits-=q.sp;used[q.t]--;ukey-=mult[q.t];unplace(q.c);if(prec&&q.sp) for(let r=0;r<L;r++) before[r]=bst[d*L+r];};
+  // stage 0: parity precheck of this piece set — if the empty region can't be matched at all, skip the whole tiling search
+  const usePar=o.parity!==false, parLeft=o.parLeft!==undefined?o.parLeft:PAR_LEFT;   // parity only pays off when few pieces are left (strong filter, small tables)
+  // parity table used only when at most PAR_LEFT pieces remain (measured: small thresholds are cheap on a first run)
+  const parVLeft=o.parVLeft!==undefined?o.parVLeft:PARV_LEFT;
+  // true = this partial placement can't be completed (some parity channel rules it out)
+  const parBad=dd=>{
+    if(M2&&n-dd<=parVLeft&&!reachOf(C2,dd).has(vec2)) return true;
+    if(M1&&n-dd<=parLeft&&!reachOf(C1,dd).has(vec)) return true;
+    return false;
+  };
+  if(usePar&&parBad(0)){o.parSkip=(o.parSkip||0)+1;return out;}
+  let d=0,enter=true,startPos=0;
+  for(;;){
+    if(enter){
+      enter=false;
+      if(work>=20000){o.nodes=(o.nodes||0)+work;work=0;o.tcount=(o.tbase||0)+out.length;yield;}
+      work++;
+      let pos=startPos;while(pos<N&&filled[pos]) pos++;
+      let go=false;
+      if(pos===N){
+        if(d===n&&(!allowSplit||splits>0)){
+          leaves++;
+          const T={p:cur.map(q=>({t:q.t,cells:q.c.map(v=>[v%W,H-L+Math.floor(v/W)])})),id:'',st:new Map(),rm:new Map()};
+          work+=40;
+          if(ctx.skipOrder||orderable(T,ctx)) out.push(T);
+        }
+      } else if(d<n){   // (the parity test already ran when this node's last piece was placed, see below)
+        const dkey=hi*1048576+ukey*2+(splits>0?1:0), gk=(prec&&splits>0)?before.join(','):'', ds=gk?deadG.get(lo+'|'+gk):dead.get(lo);
+        if(!(ds&&ds.has(dkey))){fpos[d]=pos;fli[d]=0;fl0[d]=leaves;flo[d]=lo;fkey[d]=dkey;if(prec) fgk[d]=gk;go=true;}
+      }
+      if(!go){
+        if(d===0) return out;
+        d--;undo(d);
+      }
+    }
+    const pos=fpos[d],lst=AN[pos];
+    let li=fli[d],descended=false;
+    while(li<lst.length){
+      const q=lst[li++],t=q.t;
+      if(used[t]>=avail[t]) continue;
+      const c=q.c;
+      if(filled[c[0]]||filled[c[1]]||filled[c[2]]||filled[c[3]]) continue;
+      place(c);used[t]++;ukey+=mult[t];
+      // cheapest test first: can the cells still empty be matched by the pieces still to come? (one table lookup)
+      // only then the costlier structural tests (empty regions / uncoverable cells)
+      if(usePar&&parBad(d+1)){o.parPrune=(o.parPrune||0)+1;used[t]--;ukey-=mult[t];unplace(c);continue;}
+      if(allowSplit?!deadNear(c,t,pos+1):regionsOK()){
+        if(prec&&q.sp&&!applyPrec(d,q)){used[t]--;ukey-=mult[t];unplace(c);continue;}
+        splits+=q.sp;cur.push(q);fq[d]=q;fli[d]=li;
+        d++;startPos=pos+1;enter=true;descended=true;break;
+      }
+      used[t]--;ukey-=mult[t];unplace(c);
+    }
+    if(descended) continue;
+    if(leaves===fl0[d]){const gk=prec?fgk[d]:'',dm=gk?deadG:dead,dk=gk?flo[d]+'|'+gk:flo[d];let ds=dm.get(dk);if(!ds){ds=new Set();dm.set(dk,ds);}ds.add(fkey[d]);}
+    if(d===0) return out;
+    d--;undo(d);
+  }
+}
+// ---- 1.5 pass, two stages (single clear event) ----
+// Stage A: for the rows R that are cleared first, every way to fill all their empty cells with contiguous pieces (a piece may stick out into other rows).
+// Stage B: remove the rows R; the rest of the picture is an ordinary contiguous board (leftover cells of the stage-A pieces count as filled)
+//          and is solved exactly like pass 1 (empty-region and parity checks work again). Stage-B pieces that skip a removed row are the split pieces.
+// The union over R equals the 'split only over rows of R' definition, but stage B gets pass-1 pruning.
+const PLCC=new Map();
+function placeListsContig(L){
+  let r=PLCC.get(L);if(r) return r;
+  r=placeLists(L).map(lst=>lst.filter(q=>{let rows=0,lo=99,hi=-1;for(let i=0;i<4;i++){const y=(q.c[i]/COLS)|0;rows|=1<<y;if(y<lo)lo=y;if(y>hi)hi=y;}return rows===(((1<<(hi+1))-1)^((1<<lo)-1));}));
+  PLCC.set(L,r);return r;
+}
+const POPC10=new Uint8Array(1024);for(let i=1;i<1024;i++) POPC10[i]=POPC10[i>>1]+(i&1);
+function regionsOKBits(em,L){
+  const tE=new Int32Array(L), tC=new Int32Array(L);
+  for(let y=0;y<L;y++) tE[y]=em[y];
+  for(let y0=0;y0<L;y0++){
+    while(tE[y0]){
+      const seed=tE[y0]&-tE[y0];
+      for(let y=0;y<L;y++) tC[y]=0;
+      tC[y0]=seed;tE[y0]^=seed;
+      let ch=true;
+      while(ch){
+        ch=false;
+        for(let y=0;y<L;y++){
+          let nb=(tC[y]<<1)|(tC[y]>>1);
+          if(y>0) nb|=tC[y-1];
+          if(y<L-1) nb|=tC[y+1];
+          let g=nb&tE[y];
+          if(g){ch=true;while(g){tE[y]&=~g;tC[y]|=g;g=((g<<1)|(g>>1))&tE[y];}}
+        }
+      }
+      let cnt=0;for(let y=0;y<L;y++) cnt+=POPC10[tC[y]];
+      if(cnt&3) return false;
+    }
+  }
+  return true;
+}
+function* tilings15(rows0,H,L,n,avail,o,ctx,rmask,sigOfT,seen){
+  const W=COLS,N=L*W,out=[];
+  for(let r=0;r<BUF+H-L;r++) if(rows0[r]) return out;
+  const rRows=[],nonR=[];for(let y=0;y<L;y++) ((rmask>>y)&1?rRows:nonR).push(y);
+  if(!rRows.length||!nonR.length) return out;
+  const Lc=nonR.length, rCells=[];
+  for(const y of rRows) for(let x=0;x<W;x++) rCells.push(y*W+x);
+  const filled=new Uint8Array(N);
+  for(let y=0;y<L;y++){const rw=rows0[BUF+H-L+y];for(let x=0;x<W;x++) if((rw>>x)&1) filled[y*W+x]=1;}
+  const PLc=placeListsContig(L), used={I:0,O:0,T:0,S:0,Z:0,J:0,L:0}, ap=[], bcache=new Map();
+  let work=0;
+  // protrusion cap: stage-A cells outside R in one column <= 3. A column outside R has at most 3 cells when the picture has 4 rows or fewer, so it switches itself off there.
+  const capOn=L>=5, pcnt=new Int8Array(W);
+  // incremental check while stage A is still running: only the empty regions around the piece just placed (8 neighbours) are looked at.
+  // A region of non-R cells (4-connected once the R rows are gone) can only be judged if no unfilled R cell can still reach it with a piece,
+  // otherwise later stage-A pieces may still change it; a judged region must have a size divisible by 4.
+  const isR=new Uint8Array(L), prevNon=new Int8Array(L).fill(-1), nextNon=new Int8Array(L).fill(-1);
+  for(const y of rRows) isR[y]=1;
+  {let last=-1;for(let y=0;y<L;y++){prevNon[y]=last;if(!isR[y]) last=y;}last=-1;for(let y=L-1;y>=0;y--){nextNon[y]=last;if(!isR[y]) last=y;}}
+  const reachR=new Array(N);   // R cells that share a contiguous piece placement with this cell
+  for(let v=0;v<N;v++){
+    if(isR[(v/W)|0]){reachR[v]=null;continue;}
+    const sset=new Set();for(const q of PLc[v]) for(const c of q.c) if(isR[(c/W)|0]) sset.add(c);
+    reachR[v]=[...sset];
+  }
+  const stamp=new Int32Array(N);let ep=0;const stack=new Int32Array(N);
+  const localOK=q=>{
+    ep++;
+    for(let k=0;k<4;k++){
+      const y0=(q.c[k]/W)|0,x0=q.c[k]%W;
+      for(let dy=-1;dy<=1;dy++){
+        const yy=y0+dy;if(yy<0||yy>=L||isR[yy]) continue;
+        for(let dx=-1;dx<=1;dx++){
+          const xx=x0+dx;if(xx<0||xx>=W) continue;
+          const w=yy*W+xx;if(filled[w]||stamp[w]===ep) continue;
+          let sp=0,size=0,open=false;stack[sp++]=w;stamp[w]=ep;
+          while(sp){
+            const v=stack[--sp];size++;
+            if(!open){const rr=reachR[v];for(let i=0;i<rr.length;i++) if(!filled[rr[i]]){open=true;break;}}
+            const y=(v/W)|0,x=v%W;
+            if(x>0){const u=v-1;if(!filled[u]&&stamp[u]!==ep){stamp[u]=ep;stack[sp++]=u;}}
+            if(x<W-1){const u=v+1;if(!filled[u]&&stamp[u]!==ep){stamp[u]=ep;stack[sp++]=u;}}
+            const py=prevNon[y];if(py>=0){const u=py*W+x;if(!filled[u]&&stamp[u]!==ep){stamp[u]=ep;stack[sp++]=u;}}
+            const ny=nextNon[y];if(ny>=0){const u=ny*W+x;if(!filled[u]&&stamp[u]!==ep){stamp[u]=ep;stack[sp++]=u;}}
+          }
+          if(!open&&(size&3)) return false;
+        }
+      }
+    }
+    return true;
+  };
+  const finish=function*(){
+    const n2=n-ap.length;if(n2<=0) return;
+    const rowsC=Array(BUF+Lc).fill(0);let cnt=0;
+    for(let j=0;j<Lc;j++){const y=nonR[j];let m=0;for(let x=0;x<W;x++) if(filled[y*W+x]){m|=1<<x;cnt++;}rowsC[BUF+j]=m;}
+    if(Lc*W-cnt!==4*n2) return;
+    {const em=new Int32Array(Lc);for(let j=0;j<Lc;j++) em[j]=1023^rowsC[BUF+j];if(!regionsOKBits(em,Lc)) return;}
+    const av2={};for(const t of TYPES) av2[t]=avail[t]-used[t];
+    const key=rowsC.join()+'|'+TYPES.split('').map(t=>av2[t]).join('');
+    let bl=bcache.get(key);
+    if(!bl){bl=yield* tilings(rowsC,Lc,Lc,n2,av2,o,{skipOrder:true},false);bcache.set(key,bl);}
+    for(const Tb of bl){
+      let split=false;
+      const pB=Tb.p.map(q=>{
+        let lo=99,hi=-1;const cells=q.cells.map(([x,y])=>{const r=nonR[y];if(r<lo)lo=r;if(r>hi)hi=r;return [x,H-L+r];});
+        const rs=new Set(cells.map(c=>c[1]));if(rs.size!==hi-lo+1) split=true;
+        return {t:q.t,cells};
+      });
+      if(!split) continue;   // no split piece: already found by pass 1
+      const T={p:ap.map(q=>({t:q.t,cells:q.c.map(v=>[v%W,H-L+((v/W)|0)])})).concat(pB),id:'',st:new Map(),rm:new Map()};
+      const sg=sigOfT(T);if(seen.has(sg)) continue;seen.add(sg);
+      if(((++work)&127)===0) yield;
+      if(orderable(T,ctx)) out.push(T);
+    }
+  };
+  const goA=function*(ci){
+    while(ci<rCells.length&&filled[rCells[ci]]) ci++;
+    if(ci===rCells.length){yield* finish();return;}
+    const lst=PLc[rCells[ci]];
+    for(let i=0;i<lst.length;i++){
+      const q=lst[i],t=q.t;if(used[t]>=avail[t]) continue;
+      const c=q.c;if(filled[c[0]]||filled[c[1]]||filled[c[2]]||filled[c[3]]) continue;
+      if(capOn){let bad=false;for(let k=0;k<4;k++) if(!isR[(c[k]/W)|0]) pcnt[c[k]%W]++;
+        for(let k=0;k<4;k++) if(!isR[(c[k]/W)|0]&&pcnt[c[k]%W]>3) bad=true;
+        if(bad){for(let k=0;k<4;k++) if(!isR[(c[k]/W)|0]) pcnt[c[k]%W]--;continue;}}
+      filled[c[0]]=filled[c[1]]=filled[c[2]]=filled[c[3]]=1;used[t]++;ap.push(q);
+      if(ap.length<n&&localOK(q)){
+        let rl=0;for(let j=ci+1;j<rCells.length;j++) if(!filled[rCells[j]]) rl++;
+        if(rl<=4*(n-1-ap.length)){if(((++work)&1023)===0) yield;yield* goA(ci+1);}
+      }
+      ap.pop();used[t]--;filled[c[0]]=filled[c[1]]=filled[c[2]]=filled[c[3]]=0;
+      if(capOn) for(let k=0;k<4;k++) if(!isR[(c[k]/W)|0]) pcnt[c[k]%W]--;
+    }
+  };
+  yield* goA(0);
+  return out;
+}
+// Board after placing the subset S of a tiling's pieces (complete rows removed); pos maps field row -> actual row
+function tState(T,S,ctx){
+  let st=T.st.get(S);if(st) return st;
+  const {rows0,B}=ctx, rows=rows0.slice();
+  for(let i=0;i<T.p.length;i++) if((S>>i)&1) for(const [x,id] of T.p[i].cells) rows[id+BUF]|=1<<x;
+  const pos=new Int16Array(B).fill(-1), kept=[];
+  for(let r=0;r<B;r++) if(rows[r]!==1023) kept.push(r);
+  const c=B-kept.length;
+  kept.forEach((r,j)=>{pos[r]=c+j;});
+  st={rows:Array(c).fill(0).concat(kept.map(r=>rows[r])),pos};
+  T.st.set(S,st);return st;
+}
+function isHard(rows,cs,B){
+  // 1) nothing filled above the piece in any of its columns (it can drop straight in)
+  for(let i=0;i<4;i++){
+    const x=cs[i][0],y=cs[i][1];
+    let isTop=true;
+    for(let j=0;j<4;j++) if(cs[j][0]===x&&cs[j][1]<y){isTop=false;break;}
+    if(isTop) for(let yy=0;yy<y;yy++) if((rows[yy]>>x)&1) return false;
+  }
+  // 2) it rests on the floor or on a filled cell that is not its own
+  for(let i=0;i<4;i++){
+    const x=cs[i][0],y=cs[i][1];
+    if(y+1>=B) return true;
+    if((rows[y+1]>>x)&1){
+      let own=false;
+      for(let j=0;j<4;j++) if(cs[j][0]===x&&cs[j][1]===y+1){own=true;break;}
+      if(!own) return true;
+    }
+  }
+  return false;
+}
+// reachable lock positions per (stack, piece, 180 setting); survives between runs. Numeric keys only:
+// Map<bottom 3 rows, Map<next 3 rows * 256 + (B, piece, 180 flag), Set<placement id>>>
+// (the board is at most 6 rows high and everything above is empty, so the bottom 6 rows identify a stack)
+const PKCACHE=new Map();let pkN=0;
+function canPlace(ctx,st,t,cs){
+  const rows=st.rows,B=ctx.B;
+  if(isHard(rows,cs,B)) return true;
+  if(!ctx.spin) return false;
+  if(st.ka===undefined){
+    st.ka=rows[B-1]+rows[B-2]*1024+rows[B-3]*1048576;
+    st.kb=rows[B-4]+rows[B-5]*1024+rows[B-6]*1048576;
+  }
+  const bt=st.kb*256+(B*7+TIDX[t])*2+(ctx.u180?1:0);
+  let m=PKCACHE.get(st.ka),s=m&&m.get(bt);
+  if(!s){
+    if(pkN>=30000){PKCACHE.clear();pkN=0;m=undefined;}
+    s=new Set();
+    for(const p of placements(rows,t,ctx.u180,B,true)) s.add(cellsId(p));
+    if(!m){m=new Map();PKCACHE.set(st.ka,m);}
+    m.set(bt,s);pkN++;
+  }
+  return s.has(cellsId(cs));
+}
+function reachMask(T,S,ctx){
+  let m=T.rm.get(S);if(m!==undefined) return m;
+  const st=tState(T,S,ctx);m=0;
+  for(let i=0;i<T.p.length;i++){
+    if((S>>i)&1) continue;
+    const p=T.p[i];
+    const cs=p.cells.map(([x,id])=>[x,st.pos[id+BUF]]);
+    if(cs.every(c=>c[1]>=BUF)&&SHKN[p.t].has(sigOf(cs))&&canPlace(ctx,st,p.t,cs)) m|=1<<i;
+  }
+  T.rm.set(S,m);return m;
+}
+function orderable(T,ctx){
+  if(T.ok!==undefined) return T.ok;
+  const full=(1<<T.p.length)-1, seen=new Set();
+  const go=S=>{
+    if(S===full) return true;
+    if(seen.has(S)) return false;
+    seen.add(S);
+    const m=reachMask(T,S,ctx);
+    for(let i=0;i<T.p.length;i++) if(((m>>i)&1)&&go(S|(1<<i))) return true;
+    return false;
+  };
+  return T.ok=go(0);
+}
+// Can this tiling be built in an order the queue (with hold) allows? Returns [[pieceIndex,usedHold],...] or null.
+function seqPath(T,queue,hold0,useHold,ctx){
+  const n=T.p.length,full=(1<<n)-1,dead=new Set();
+  const hid=h=>h?TYPES.indexOf(h)+1:0;
+  function go(S,qi,hold,path){
+    if(S===full) return path;
+    const key=(S*16+qi)*8+hid(hold);
+    if(dead.has(key)) return null;
+    const cur=queue[qi];
+    if(cur!==undefined){
+      const m=reachMask(T,S,ctx);
+      const tryP=(t,nq,nh,used)=>{
+        for(let i=0;i<n;i++) if(!((S>>i)&1)&&((m>>i)&1)&&T.p[i].t===t){
+          const r=go(S|(1<<i),nq,nh,path.concat([[i,used]]));
+          if(r) return r;
+        }
+        return null;
+      };
+      let r=tryP(cur,qi+1,hold,false);
+      if(!r&&useHold&&hold!==cur){
+        if(hold) r=tryP(hold,qi+1,cur,true);
+        else if(qi+1<queue.length) r=tryP(queue[qi+1],qi+2,cur,true);
+      }
+      if(r) return r;
+    } else if(useHold&&hold){
+      // queue exhausted: in a real game the next piece still spawns, so the held piece can be swapped in for the final placement
+      const m=reachMask(T,S,ctx);
+      for(let i=0;i<n;i++) if(!((S>>i)&1)&&((m>>i)&1)&&T.p[i].t===hold){
+        const r=go(S|(1<<i),qi,null,path.concat([[i,true]]));
+        if(r) return r;
+      }
+    }
+    dead.add(key);return null;
+  }
+  return go(0,0,hold0||null,[]);
+}
+// Boolean-only version of seqPath for the probability-only mode. Layer L = set of states (placed-set S, held piece) after consuming exactly the first L queue pieces;
+// a layer depends only on those L pieces, so consecutive queues that share a prefix reuse the layers already built for this tiling.
+function fastOK(T,q,m,hold0,useHold,ctx){
+  const n=T.p.length,full=(1<<n)-1;
+  if(!T.tc) T.tc=T.p.map(p=>TYPES.indexOf(p.t));
+  const fk=(hold0||'')+(useHold?'1':'0');
+  if(T.fk!==fk){T.fk=fk;T.pf=T.lay=T.fa=null;}   // tilings are cached across runs; layers depend on the hold settings
+  let pf=T.pf,lay=T.lay,fa=T.fa;
+  if(!pf){pf=T.pf=[];lay=T.lay=[];fa=T.fa=[];lay[0]=new Set([hold0?TYPES.indexOf(hold0)+1:0]);fa[0]=false;}
+  let c=0;while(c<pf.length&&c<m&&pf[c]===q[c]) c++;
+  pf.length=c;lay.length=c+1;fa.length=c+1;
+  for(let L=c+1;L<=m;L++){
+    const cur=new Set(),pc=q[L-1];let got=false;
+    const add=(S,h)=>{if(S===full) got=true;cur.add(S*8+h);};
+    for(const st of lay[L-1]){
+      const S=st>>3,h=st&7;if(S===full) continue;
+      const msk=reachMask(T,S,ctx);
+      for(let i=0;i<n;i++) if(!((S>>i)&1)&&((msk>>i)&1)){
+        if(T.tc[i]===pc) add(S|(1<<i),h);
+        else if(useHold&&h&&h-1===T.tc[i]&&h-1!==pc) add(S|(1<<i),pc+1);
+      }
+    }
+    if(useHold&&L>=2){
+      const p0=q[L-2],p1=q[L-1];
+      for(const st of lay[L-2]){
+        const S=st>>3,h=st&7;if(h||S===full) continue;
+        const msk=reachMask(T,S,ctx);
+        for(let i=0;i<n;i++) if(!((S>>i)&1)&&((msk>>i)&1)&&T.tc[i]===p1) add(S|(1<<i),p0+1);
+      }
+    }
+    pf.push(pc);lay[L]=cur;fa[L]=got;
+  }
+  for(let L=0;L<=m;L++) if(fa[L]) return true;
+  if(useHold) for(const st of lay[m]){
+    const S=st>>3,h=st&7;if(!h||S===full) continue;
+    const msk=reachMask(T,S,ctx);
+    for(let i=0;i<n;i++) if(!((S>>i)&1)&&((msk>>i)&1)&&T.tc[i]===h-1&&(S|(1<<i))===full) return true;
+  }
+  return false;
+}
+function buildSteps(T,path,ctx){
+  let S=0;const steps=[];
+  for(const [i,used] of path){
+    const st=tState(T,S,ctx);
+    const cs=T.p[i].cells.map(([x,id])=>[x,st.pos[id+BUF]]);
+    const ghost=[];
+    for(let j=0;j<T.p.length;j++) if(j!==i&&!((S>>j)&1)) ghost.push({t:T.p[j].t,cs:T.p[j].cells.map(([x,id])=>[x,st.pos[id+BUF]])});
+    steps.push({t:T.p[i].t,cs,used,ghost,before:st.rows,spin:!isHard(st.rows,cs,ctx.B)});
+    S|=1<<i;
+  }
+  return steps;
+}
+// above this many distinct cases (after cutting the queue to the pieces that matter) the search refuses to start
+const MAX_CASES=20000000;
+let RUNID=0;   // tilings are cached across runs; their example build steps / queue must be rebuilt for each run's own queue
+function* search(o){
+  o.runId=++RUNID;
+  if(o.pmask) PARM={v:o.pmask.v?1:0,c:o.pmask.c?1:0,k:o.pmask.k?1:0};
+  let {seqs}=o;const {rows0,hold0,useHold,u180,max,H}=o, spin=o.spin!==false, B=H+BUF;
+  o.shapes=new Map();o.okW=0;o.okN=0;o.doneW=0;o.seqDone=0;o.ns=[];o.nodes=0;o.tcount=0;o.tbase=0;o.parSkip=0;o.parPrune=0;
+  const filled=rows0.reduce((a,v)=>a+popc(v),0);
+  const cap=seqs.len+(hold0?1:0), ns=[];
+  for(let n=1;n<=cap;n++) if((filled+4*n)%10===0&&(filled+4*n)/10===Math.min(H,MAXL)) ns.push(n);
+  const ctx={rows0,B,spin,u180,pk:new Map()};
+  // result entry per (pass, n, queue prefix); prefixes are keyed by a base-8 number, not a string
+  const elist=[], ecmaps={1:ns.map(()=>new Map()),1.5:ns.map(()=>new Map()),2:ns.map(()=>new Map())};
+  const nsM=ns.map(n=>Math.min((useHold&&!hold0)?n+1:n,seqs.len));
+  // only the first max(nsM) pieces matter: search distinct prefixes instead of every full queue
+  seqs=seqs.truncate(nsM.length?Math.max(...nsM):0);o.seqsN=seqs.n;
+  if(seqs.n>MAX_CASES){o.err='TOO_MANY';o.errN=seqs.n;return;}
+  const qbuf=new Uint8Array(Math.max(seqs.len,1));
+  const ckey=rows0.join()+'|'+H+'|'+spin+'|'+u180+'|'+(o.parity!==false)+pmStr()+'|'+(o.parLeft===undefined?'a':o.parLeft)+'|'+(o.parVLeft===undefined?'a':o.parVLeft);
+  if(!TCACHE.has(ckey)){if(TCACHE.size>=6) TCACHE.delete(TCACHE.keys().next().value);TCACHE.set(ckey,new Map());}
+  const tcache=TCACHE.get(ckey);
+  const sigOfT=T=>T.sig||(T.sig=T.p.map(p=>p.t+p.cells.map(c=>c[1]*COLS+c[0]).sort((a,b)=>a-b).join('.')).sort().join('|'));
+  o.collect=()=>{
+    const shapes=new Map();
+    // same placement picture (piece types + cells) reached through different queues / piece sets is one solution
+    // a queue prefix counts once per solution: pass 1.5 and pass 2 can both list the same picture for the same prefix
+    for(const e of elist) if(e.w>0) for(const T of e.list){
+      const sig=sigOfT(T);
+      let sh=shapes.get(sig);
+      if(!sh){sh={sig,steps:T.steps,q:T.q,w:0,sp:T.sp,n:e.n,T,pf:new Set()};shapes.set(sig,sh);}
+      else if(T.sp>sh.sp){sh.steps=T.steps;sh.q=T.q;sh.sp=T.sp;sh.n=e.n;sh.T=T;}
+      const pk=e.ni*4294967296+e.ek;
+      if(!sh.pf.has(pk)){sh.pf.add(pk);sh.w+=e.w;}
+    }
+    o.shapes=shapes;
+  };
+  const okBits=seqs.n<=67108864?new Uint8Array(seqs.n):null, okSet=okBits?null:new Set();
+  const okHas=k=>okBits?okBits[k]===1:okSet.has(k), okAdd=k=>{if(okBits) okBits[k]=1;else okSet.add(k);};
+  // orders solved in pass 1.5: pass 2 skips them when o.skip15 is on (their solution lists stay as pass 1 / 1.5 found them)
+  const s15Bits=okBits?new Uint8Array(seqs.n):null, s15Set=okBits?null:new Set();
+  const s15Has=k=>s15Bits?s15Bits[k]===1:s15Set.has(k), s15Add=k=>{if(s15Bits) s15Bits[k]=1;else s15Set.add(k);};
+  const skip15=o.skip15!==false;
+  o.pass=1;o.ran15=false;o.seqDone2=0;o.seqDone15=0;o.okN1=0;o.okN15=0;o.minimal=null;o.minRank=null;
+  o.minSkipped=seqs.n>2000000;
+  const probOnly=!!o.probOnly;
+  // probability-only: one tiling per order is enough, no solution list / shapes / minimal set
+  if(probOnly) o.collect=()=>{};
+  const qcov=(o.minSkipped||probOnly)?null:new Array(seqs.n).fill(null), qwt=qcov?new Float64Array(seqs.n):null;
+  // Minimum solution set: fewest placements that still cover every queue that can clear (greedy set cover, weighted by queue probability)
+  const computeMin=()=>{
+    if(!qcov) return;
+    const groups=new Map();
+    for(let k=0;k<qcov.length;k++){
+      const a=qcov[k];if(!a) continue;
+      const key=a.slice().sort((x,y)=>x-y).join(',');let g=groups.get(key);
+      if(!g){g={es:a.slice(),w:0};groups.set(key,g);}
+      g.w+=qwt[k];
+    }
+    const gl=[...groups.values()], eSigs=new Map(), sigGroups=new Map();
+    const spOf=new Map();   // spin/tuck count per shape: ties in the greedy cover go to the shape with more spins
+    let total=0;
+    gl.forEach((g,gi)=>{
+      total+=g.w;const ss=new Set();
+      for(const id of g.es){
+        let st=eSigs.get(id);
+        if(!st){st=new Set(elist[id].list.map(sigOfT));eSigs.set(id,st);for(const T of elist[id].list){const sg=sigOfT(T);if((T.sp||0)>(spOf.get(sg)||0)) spOf.set(sg,T.sp||0);else if(!spOf.has(sg)) spOf.set(sg,T.sp||0);}}
+        for(const x of st) ss.add(x);
+      }
+      for(const x of ss){let arr=sigGroups.get(x);if(!arr) sigGroups.set(x,arr=[]);arr.push(gi);}
+    });
+    const left=new Uint8Array(gl.length).fill(1), picks=[];let rem=gl.length,covered=0;
+    while(rem>0){
+      let best=null,bw=0;
+      for(const [x,arr] of sigGroups){let w=0;for(let i=0;i<arr.length;i++) if(left[arr[i]]) w+=gl[arr[i]].w;if(w>bw+1e-12||(w>0&&Math.abs(w-bw)<=1e-12&&(spOf.get(x)||0)>(spOf.get(best)||0))){bw=w;best=x;}}
+      if(best===null) break;
+      picks.push({sig:best,gain:bw});covered+=bw;
+      for(const gi of sigGroups.get(best)) if(left[gi]){left[gi]=0;rem--;}
+    }
+    // improve the greedy cover: (1) drop picks that other picks already cover, (2) swap two picks for one single pick, (3) re-rank by marginal gain
+    o.minGreedy=picks.length;
+    {
+      const G=gl.length,W=(G+31)>>>5,cov=new Map(),spw=x=>spOf.get(x)||0;
+      for(const [x,arr] of sigGroups){const bs=new Uint32Array(W);for(let i=0;i<arr.length;i++){const gi=arr[i];bs[gi>>>5]|=1<<(gi&31);}cov.set(x,bs);}
+      const cc=new Int32Array(G);let cur=picks.map(p=>p.sig);
+      const add=x=>{for(const gi of sigGroups.get(x)) cc[gi]++;}, del=x=>{for(const gi of sigGroups.get(x)) cc[gi]--;};
+      cur.forEach(add);
+      for(let i=cur.length-1;i>=0;i--){
+        let red=true;for(const gi of sigGroups.get(cur[i])) if(cc[gi]<2){red=false;break;}
+        if(red){del(cur[i]);cur.splice(i,1);}
+      }
+      // swap m picks for m-1 picks: take m picks out, then try to cover what only they covered with m-1 others (depth-first, branching on the first uncovered group)
+      const gSigs=Array.from({length:G},()=>[]);
+      for(const [x,arr] of sigGroups) for(let i=0;i<arr.length;i++) gSigs[arr[i]].push(x);
+      const has=(x,gi)=>(cov.get(x)[gi>>>5]>>>(gi&31))&1;
+      const solve=(R,k)=>{
+        if(!R.length) return [];
+        if(k===0) return null;
+        const cand=gSigs[R[0]];
+        for(let c=0;c<cand.length;c++){
+          const x=cand[c],R2=[];for(let i=1;i<R.length;i++) if(!has(x,R[i])) R2.push(R[i]);
+          const r=solve(R2,k-1);if(r) {r.push(x);return r;}
+        }
+        return null;
+      };
+      const deadline=performance.now()+2500;
+      let improved=true,m=2;
+      while(m<=3&&cur.length>=m&&performance.now()<deadline){
+        improved=false;
+        const idx=Array.from({length:m},(_,i)=>i);
+        search: while(true){
+          if(performance.now()>deadline) break;
+          const out=idx.map(i=>cur[i]);out.forEach(del);
+          const U=[];const seenG=new Set();
+          for(const x of out) for(const gi of sigGroups.get(x)) if(cc[gi]===0&&!seenG.has(gi)){seenG.add(gi);U.push(gi);}
+          const rep=solve(U,m-1);
+          if(rep){
+            const keep=cur.filter((_,i)=>!idx.includes(i));
+            cur=keep.concat(rep);rep.forEach(add);improved=true;break search;
+          }
+          out.forEach(add);
+          let i=m-1;while(i>=0&&idx[i]===cur.length-m+i) i--;
+          if(i<0) break;
+          idx[i]++;for(let k=i+1;k<m;k++) idx[k]=idx[k-1]+1;
+        }
+        if(!improved) m++; else m=2;
+      }
+      const left2=new Uint8Array(G).fill(1),rest=cur.slice(),np=[];let cov2=0;
+      while(rest.length){
+        let bi=0,bw=-1;
+        for(let r=0;r<rest.length;r++){let w=0;for(const gi of sigGroups.get(rest[r])) if(left2[gi]) w+=gl[gi].w;if(w>bw+1e-12||(Math.abs(w-bw)<=1e-12&&spw(rest[r])>spw(rest[bi]))){bw=w;bi=r;}}
+        const x=rest.splice(bi,1)[0];np.push({sig:x,gain:bw});cov2+=bw;for(const gi of sigGroups.get(x)) left2[gi]=0;
+      }
+      picks.length=0;for(const q of np) picks.push(q);covered=cov2;
+    }
+    o.minimal=picks;o.minTotal=total;o.minCov=covered;
+    o.minRank=new Map(picks.map((p,i)=>[p.sig,{r:i+1,g:p.gain}]));
+  };
+  o.tp=[null,null,null];   // start times: [pass 1, pass 2, pass 1.5]
+  const rmode=o.rmode||'even', use15=o.use15!==false;
+  o.use15=use15;
+  const multi=use15&&rmode==='multi';   // multi-stage 1.5 is complete: pass 2 is not needed
+  o.multi=multi;
+  for(const pass of (use15?(multi?[1,1.5]:[1,1.5,2]):[1,2])){
+    o.pass=pass;
+    if(pass===1.5) o.okN1=o.okN;
+    if(pass===2&&use15) o.okN15=o.okN;
+    // probability-only: every order already solved (100%) -> nothing left to find, stop
+    if(probOnly&&pass>1&&o.okN>=seqs.n) break;
+    o.tp[pass===1?0:pass===2?1:2]=performance.now();
+    if(pass===1.5) o.ran15=true;
+    for(let k=0;k<seqs.n;k++){
+      // limited solution count = fast mode: a queue that pass 1 already solved needs no split-tiling search
+      if(pass>1&&max!==Infinity&&okHas(k)){if(pass===2) o.seqDone2++;else o.seqDone15++;if((k&63)===0) yield;continue;}
+      if(pass===2&&use15&&skip15&&s15Has(k)){o.seqDone2++;o.skipped15=(o.skipped15||0)+1;if((k&63)===0) yield;continue;}
+      const qw=seqs.fill(k,qbuf);let ok=false;const ge=[];
+      for(let ni=0;ni<ns.length;ni++){
+        const n=ns[ni],m=nsM[ni];
+        let ek=0;for(let i=0;i<m;i++) ek=ek*8+qbuf[i]+1;
+        const emap=ecmaps[pass][ni];
+        let e=emap.get(ek);
+        if(!e){
+          const pref=[];for(let i=0;i<m;i++) pref.push(TYPES[qbuf[i]]);
+          e={id:elist.length,n,list:[],w:0,ni,ek};emap.set(ek,e);elist.push(e);o.curN=n;
+          const avail={I:0,O:0,T:0,S:0,Z:0,J:0,L:0};
+          for(const t of pref) avail[t]++;
+          if(useHold&&hold0) avail[hold0]++;
+          const tk=pass+'|'+(pass===1.5?rmode+(o.alg15==='two'?'t':'')+'|':'')+n+'|'+TYPES.split('').map(t=>avail[t]).join('');
+          let tl=tcache.get(tk);
+          if(!tl){
+            const s0=o.parSkip||0,p0=o.parPrune||0;
+            if(pass===1.5&&multi){
+              tl=yield* tilings(rows0,H,(filled+4*n)/10,n,avail,o,ctx,true,null,true);
+            } else if(pass===1.5){
+              // 1.5 pass: for each candidate set R of rows cleared first, tilings whose split pieces only skip rows of R (deduplicated by picture)
+              tl=[];const seenT=new Set(),LL=(filled+4*n)/10;
+              for(const rm of rMasksFor(LL,rmode)){
+                if(o.alg15!=='two'){
+                  const sub=yield* tilings(rows0,H,LL,n,avail,o,ctx,true,rm);
+                  for(const T of sub){const sg=sigOfT(T);if(!seenT.has(sg)){seenT.add(sg);tl.push(T);}}
+                } else {
+                  const sub=yield* tilings15(rows0,H,LL,n,avail,o,ctx,rm,sigOfT,seenT);
+                  for(const T of sub) tl.push(T);
+                }
+              }
+              if(o.dbg){o.t15sigs=o.t15sigs||new Set();for(const T of tl) o.t15sigs.add(n+'/'+sigOfT(T));}
+            } else tl=yield* tilings(rows0,H,(filled+4*n)/10,n,avail,o,ctx,pass===2);
+            tl.forEach((T,i)=>{T.id=tk+'#'+i;});
+            tl.par=[(o.parSkip||0)-s0,(o.parPrune||0)-p0];
+            tcache.set(tk,tl);
+          } else if(tl.par){o.parSkip=(o.parSkip||0)+tl.par[0];o.parPrune=(o.parPrune||0)+tl.par[1];}
+          o.tbase=(o.tbase||0)+tl.length;o.tcount=o.tbase;
+          const found=[];
+          for(let ti=0;ti<tl.length;ti++){
+            const T=tl[ti];
+            if(((++o.nodes)&127)===0) yield;
+            let path=null;
+            if(probOnly&&!o.noFast){if(!fastOK(T,qbuf,m,hold0,useHold,ctx)) continue;}
+            else{path=seqPath(T,pref,hold0,useHold,ctx);if(!path) continue;}
+            if(!probOnly&&(T.run!==o.runId||!T.steps)){T.run=o.runId;T.steps=buildSteps(T,path,ctx);T.q=pref.join('');T.sp=T.steps.reduce((a,s)=>a+(s.spin?1:0),0);}
+            e.list.push(T);found.push(ti);
+            if(e.list.length>=max) break;
+          }
+          // with a limited solution count, tilings that worked go to the front so the next queues find them first
+          if(max!==Infinity) for(let j=0;j<found.length;j++){const a=found[j];if(a!==j){const x=tl[j];tl[j]=tl[a];tl[a]=x;}}
+          if(e.list.length&&!o.ns.includes(n)) o.ns.push(n);
+        }
+        if(e.list.length){ok=true;e.w+=qw;ge.push(e.id);}
+      }
+      if(ge.length&&qcov){let a=qcov[k];if(!a) qcov[k]=a=[];for(const id of ge) if(a.indexOf(id)<0) a.push(id);qwt[k]=qw;}
+      if(ok&&pass===1.5) s15Add(k);
+      if(ok&&!okHas(k)){okAdd(k);o.okW+=qw;o.okN++;}
+      if(pass===1){o.doneW+=qw;o.seqDone++;}else if(pass===2) o.seqDone2++;else o.seqDone15++;
+      if((k&63)===0) yield;
+    }
+    if(pass===1) o.collect();
+  }
+  if(use15&&(!o.ran15||multi)) o.okN15=o.okN;   // 1.5 never needed to run / pass 2 not run: nothing more will be found
+  if(!use15) o.okN15=o.okN1=0;
+  computeMin();
+  o.collect();
+}
+// Plain-data copy of the current result (safe to post from a Worker)
+// seconds spent so far in pass 1 and pass 2 (pass 2 = 0 until it starts)
+function passTimes(o){const n=performance.now(),t=o.tp||[],a=t[0],b=t[1],c=t[2];const e1=c!=null?c:(b!=null?b:n);return [a==null?0:(e1-a)/1000,b==null?0:(n-b)/1000,c==null?null:((b!=null?b:n)-c)/1000];}
+function snapshot(o){
+  if(o.collect) o.collect();
+  const shapes=[];
+  if(o.shapes) for(const s of o.shapes.values()){const m=o.minRank&&o.minRank.get(s.sig);shapes.push({w:s.w,sp:s.sp,q:s.q,n:s.n,steps:s.steps,pic:s.T.p.map(q=>({t:q.t,cells:q.cells})),mn:m?m.r:0,mg:m?m.g:0});}
+  return {pt:passTimes(o),shapes,okW:o.okW||0,okN:o.okN||0,doneW:o.doneW||0,seqDone:o.seqDone||0,seqDone2:o.seqDone2||0,parSkip:(o.parSkip||0)+(o.parPrune||0),parPrune:o.parPrune||0,minN:o.minimal?o.minimal.length:0,minTot:o.minTotal||0,minCov:o.minCov||0,minSkipped:!!o.minSkipped,tot:o.seqsN||0,probOnly:!!o.probOnly,ns:(o.ns||[]).slice(),pass:o.pass||1,skipped15:o.skipped15||0,use15:!!o.use15,okN1:o.okN1||0,okN15:o.okN15||0,seqDone15:o.seqDone15||0,err:o.err,errN:o.errN||0};
+}
+//LOGIC_END
+
+// Queue syntax. A group "[ ... ]" holds elements (single pieces or nested groups) separated freely by spaces.
+//   [IOT]      all elements, written order      [IOT]!    all elements, random order
+//   [IOTS]2    pick 2, written order            [IOTS]2!  pick 2, random order   (number first, then !)
+//   [[SZ]! [LJ]!]2!   both sub-groups (each internally random), in random order
+function parseQ(s){
+  s=s.toUpperCase();let i=0;
+  const fail=m=>{throw new Error(m);};
+  function mods(){
+    let d='',bang=false;
+    while(/[0-9]/.test(s[i]||'')) d+=s[i++];
+    if(s[i]==='!'){bang=true;i++;}
+    if(/[0-9]/.test(s[i]||'')) fail(L('숫자는 !보다 앞에 써야 합니다. 예: [IOTSZJL]3!','A number must come before !. e.g. [IOTSZJL]3!'));
+    if(d&&+d<1) fail(L('뽑는 개수는 1 이상이어야 합니다.','The pick count must be at least 1.'));
+    return {k:d?+d:null,r:bang};
+  }
+  function list(close){
+    const els=[];
+    while(i<s.length){
+      const ch=s[i];
+      if(ch===']'){ if(!close) fail(L('짝이 없는 ] 가 있습니다.','There is an unmatched ].')); return els; }
+      i++;
+      if(ch==='['){
+        const g=list(true);
+        if(s[i]!==']') fail(L('닫히지 않은 [ 가 있습니다.','There is an unclosed [.'));
+        i++;
+        const m=mods();
+        if(g.length) els.push({g,k:m.k===null?g.length:m.k,r:m.r});
+        else{
+          // [] with nothing inside is shorthand for a full random 7-bag ([IOTSZJL]! with no modifiers), and always counts as a bag
+          const bag='IOTSZJL'.split('').map(c=>({c}));
+          els.push({g:bag,k:m.k===null?7:m.k,r:m.k===null&&!m.r?true:m.r});
+        }
+      }
+      else if('IOTSZJL'.includes(ch)) els.push({c:ch});
+      else if(/[0-9!]/.test(ch)) fail(L('숫자와 !는 ] 바로 뒤에만 쓸 수 있습니다. 예: [IOTSZJL]3!','A number or ! may only follow ]. e.g. [IOTSZJL]3!'));
+    }
+    if(close) fail(L('닫히지 않은 [ 가 있습니다.','There is an unclosed [.'));
+    return els;
+  }
+  return list(false);
+}
+// Every distinct sequence a node can produce, with its probability.
+// Each choice of element indices is equally likely; duplicates are merged exactly.
+function nodeOptions(n){
+  if(n.c) return [{q:[n.c],w:1}];
+  const eo=n.g.map(nodeOptions), m=n.g.length, k=Math.min(n.k,m);
+  const acc=new Map(), used=Array(m).fill(false);let total=0;
+  function emit(idxs){
+    let combos=[{q:[],w:1}];
+    for(const i of idxs){
+      const nx=[];
+      for(const c of combos) for(const o of eo[i]) nx.push({q:c.q.concat(o.q),w:c.w*o.w});
+      combos=nx;
+    }
+    for(const c of combos){const key=c.q.join('');acc.set(key,(acc.get(key)||0)+c.w);}
+    total++;
+  }
+  (function rec(start,cur){
+    if(cur.length===k){emit(cur);return;}
+    if(n.r){for(let i=0;i<m;i++){if(used[i])continue;used[i]=true;rec(0,cur.concat(i));used[i]=false;}}
+    else for(let i=start;i<=m-(k-cur.length);i++) rec(i+1,cur.concat(i));
+  })(0,[]);
+  return [...acc].map(([s,w])=>({q:s.split(''),w:w/total}));
+}
+// All orderings are generated on demand (mixed-radix index), so any number of combinations is allowed.
+// Upper bound on how many distinct sequences one top-level item can produce, computed WITHOUT enumerating them
+// (so something like [[][][][][][][][][]]! is refused up front instead of freezing the page)
+const MAX_ITEM_OPTS=2000000;
+function estOptions(n){
+  if(n.c) return 1;
+  const m=n.g.length,k=Math.min(n.k,m);
+  const ch=n.g.map(estOptions).sort((a,b)=>b-a);
+  let prod=1;for(let i=0;i<k;i++) prod*=ch[i];
+  let sets=1;
+  if(n.r){for(let i=0;i<k;i++) sets*=(m-i);}
+  else{for(let i=0;i<k;i++) sets=sets*(m-i)/(i+1);}
+  return sets*prod;
+}
+function buildSeqs(items){
+  for(const it of items){
+    const e=estOptions(it);
+    if(e>MAX_ITEM_OPTS) throw new Error(L(
+      `경고: 이 묶음은 경우의 수가 너무 많아(약 ${e>=1e15?'10^15가지 이상':Math.round(e).toLocaleString()+'가지'}) 탐색하지 않습니다. 묶음 안의 묶음을 줄이거나 고정된 피스를 쓰세요.`,
+      `Warning: this group has too many possible orders (about ${e>=1e15?'10^15+':Math.round(e).toLocaleString()}), so it won't be searched. Use fewer nested groups or fixed pieces.`));
+  }
+  return makeSeqs(items.map(nodeOptions));
+}
+function makeSeqs(ps){
+  let n=1;
+  for(const p of ps) n*=p.length;
+  const len=ps.reduce((a,p)=>a+p[0].q.length,0);
+  const pn=ps.map(p=>p.map(o=>({qn:o.q.map(c=>TYPES.indexOf(c)),w:o.w})));
+  const off=[];{let a=0;for(const p of ps){off.push(a);a+=p[0].q.length;}}
+  const cho=new Array(ps.length);
+  return {n,len,
+  // The search only ever looks at the first m pieces of a queue, so queues that agree on those m pieces are one case.
+  // Drops everything after piece m and merges the options of the item that straddles the cut (weights add up).
+  truncate(m){
+    if(m>=len) return this;
+    const nps=[];let a=0;
+    for(let i=0;i<ps.length&&a<m;i++){
+      const l=ps[i][0].q.length;
+      if(a+l<=m){nps.push(ps[i]);a+=l;continue;}
+      const r=m-a,mp=new Map();
+      for(const o of ps[i]){const key=o.q.slice(0,r).join('');mp.set(key,(mp.get(key)||0)+o.w);}
+      nps.push([...mp].map(([k,w])=>({q:k.split(''),w})));a=m;
+    }
+    return makeSeqs(nps);
+  },
+  // writes queue number k into buf (piece indexes into TYPES) and returns its probability weight (same product order as at())
+  fill(k,buf){
+    for(let i=ps.length-1;i>=0;i--){
+      const lst=pn[i],r=k%lst.length;k=(k-r)/lst.length;
+      const o=lst[r];cho[i]=o;const qn=o.qn,b=off[i];
+      for(let j=0;j<qn.length;j++) buf[b+j]=qn[j];
+    }
+    let w=1;for(let i=0;i<ps.length;i++) w*=cho[i].w;
+    return w;
+  },
+  at(k){
+    const idx=Array(ps.length);let w=1;
+    for(let i=ps.length-1;i>=0;i--){idx[i]=k%ps[i].length;k=Math.floor(k/ps[i].length);}
+    const q=[];ps.forEach((p,i)=>{q.push(...p[idx[i]].q);w*=p[idx[i]].w;});
+    return {q,w};
+  }};
+}
+//ENGINE_END
+
+const $=id=>document.getElementById(id);
+const ed=$('ed'), vw=$('vw');
+let H=4, board=[], gen=null, running=false, sols=[], cur=null, step=0, timer=null;
+const resetBoard=()=>{board=Array.from({length:H},()=>Array(COLS).fill(0));drawEd();};
+function size(cv){cv.width=COLS*CELL;cv.height=H*CELL;}
+function cell(c,x,y,color,a){
+  c.globalAlpha=a||1;c.fillStyle=color;c.fillRect(x*CELL+1,y*CELL+1,CELL-2,CELL-2);
+  c.fillStyle='rgba(255,255,255,.22)';c.fillRect(x*CELL+1,y*CELL+1,CELL-2,4);c.globalAlpha=1;
+}
+function grid(c){
+  c.clearRect(0,0,COLS*CELL,H*CELL);c.strokeStyle='#161b3a';c.lineWidth=1;c.beginPath();
+  for(let i=0;i<=COLS;i++){c.moveTo(i*CELL+.5,0);c.lineTo(i*CELL+.5,H*CELL);}
+  for(let j=0;j<=H;j++){c.moveTo(0,j*CELL+.5);c.lineTo(COLS*CELL,j*CELL+.5);}
+  c.stroke();
+}
+function drawEd(){
+  size(ed);const c=ed.getContext('2d');grid(c);
+  board.forEach((r,y)=>r.forEach((v,x)=>v&&cell(c,x,y,COLORS.G)));
+}
+let paint=null;
+function pos(e){const b=ed.getBoundingClientRect();return[Math.floor((e.clientX-b.left)/b.width*COLS),Math.floor((e.clientY-b.top)/b.height*H)];}
+function paintAt(e){const[x,y]=pos(e);if(x<0||y<0||x>=COLS||y>=H)return;if(paint===null)paint=board[y][x]?0:1;board[y][x]=paint;drawEd();}
+ed.addEventListener('pointerdown',e=>{paint=null;ed.setPointerCapture(e.pointerId);paintAt(e);});
+ed.addEventListener('pointermove',e=>{if(e.buttons)paintAt(e);});
+ed.addEventListener('pointerup',()=>restoreSaved());
+ed.addEventListener('pointercancel',()=>restoreSaved());
+const setH=v=>{v=Math.max(2,Math.min(12,Math.round(+v)||4));if(running){$('hh').value=H;return;}$('hh').value=v;if(v!==H){H=v;resetBoard();}$('hint6').style.display=H>MAXL?'':'none';};
+$('hh').onchange=e=>{setH(e.target.value);restoreSaved();};
+$('hm').onclick=()=>{setH(H-1);restoreSaved();};
+$('hp').onclick=()=>{setH(H+1);restoreSaved();};
+$('clr').onclick=()=>{resetBoard();restoreSaved();};
+$('rnd').onclick=()=>{
+  const bag=()=>'IOTSZJL'.split('').sort(()=>Math.random()-.5);
+  $('q').value=bag().concat(bag()).join('');
+};
+$('rnd').click();
+
+const st=(t,k)=>{const s=$('status');s.textContent=t;s.className=k||'';};
+function toRows(){
+  const rows=Array(H+BUF).fill(0);
+  board.forEach((r,y)=>r.forEach((v,x)=>{if(v)rows[BUF+y]|=1<<x;}));
+  return rows;
+}
+function stopRun(){running=false;$('go').style.display='';$('stop').style.display='none';}
+const fmtT=v=>v.toFixed(1);
+const ptSep=(pt,use15,ko,run)=>{   // the three pass times, always separate; a pass that did not run says so
+  const f=v=>fmtT(v)+(ko?'초':'s'),no=ko?'안 함':'not run';
+  const a=(ko?'1차 ':'pass 1 ')+f(pt[0]);
+  const b=use15?((ko?'1.5차 ':'pass 1.5 ')+(pt[2]!=null?f(pt[2]):(run?'-':no))):'';
+  const c=(ko?'2차 ':'pass 2 ')+(pt[1]?f(pt[1]):(run?'-':no));
+  return [a,b,c].filter(Boolean).join(' · ');};
+const ptK=R=>R&&R.pt?` (${ptSep(R.pt,R.use15,true,false)})`:'';
+const ptE=R=>R&&R.pt?` (${ptSep(R.pt,R.use15,false,false)})`:'';
+const okK=R=>R&&R.use15?` · 성공 순서 1차 ${R.okN1} → 1.5차 ${R.okN15} → 2차 ${R.okN}${R.skipped15?` (1.5차에서 푼 ${R.skipped15}개는 2차 생략)`:''}`:'';
+const okE=R=>R&&R.use15?` · successful orders: pass 1 ${R.okN1} → 1.5 ${R.okN15} → 2 ${R.okN}${R.skipped15?` (${R.skipped15} solved in 1.5 skipped pass 2)`:''}`:'';
+const pct=x=>x>=.999995?'100%':(x*100).toFixed(2)+'%';
+let shapes=[],multi=false,curQ='',total=0,effLen=0,stopHandler=null,W=null,wAlive=false,wFail=false;
+$('stop').onclick=()=>{if(stopHandler) stopHandler();};
+const progText=(p)=>L(
+  `탐색 중… ${p.pass===2?'(2차: 줄 삭제 뒤 갈라지는 배치) ':p.pass===1.5?'(1.5차: 지정한 줄을 먼저 지운 뒤) ':''}${p.curN}피스 시도, 순서 ${p.pass===2?p.seqDone2:p.pass===1.5?p.seqDone15:p.seqDone}/${p.tot||total}, 배치 후보 ${(p.tcount||0).toLocaleString()}개 · 페리티 제외 ${(p.parSkip||0).toLocaleString()}개${p.pt?` · 경과 ${ptSep(p.pt,p.use15,true,true)}`:''}`,
+  `Searching… ${p.pass===2?'(pass 2: splits after line clears) ':p.pass===1.5?'(pass 1.5: chosen rows cleared first) ':''}trying ${p.curN}-piece, order ${p.pass===2?p.seqDone2:p.pass===1.5?p.seqDone15:p.seqDone}/${p.tot||total}, ${(p.tcount||0).toLocaleString()} placements · ${(p.parSkip||0).toLocaleString()} pruned by parity${p.pt?` · elapsed ${ptSep(p.pt,p.use15,false,true)}`:''}`
+);
+// Result of a run (a plain snapshot object, from the Worker or from the main-thread fallback)
+function finishRun(R,stopped,sec){
+  stopRun();stopHandler=null;pending=null;
+  if(R.err==='TOO_MANY') return st(L(
+    `경고: 확인해야 할 경우의 수가 ${R.errN.toLocaleString()}가지로 너무 많아 탐색하지 않습니다. (한도 ${MAX_CASES.toLocaleString()}가지) 넥스트를 줄이거나 [ ] 대신 고정된 피스를 쓰세요.`,
+    `Warning: ${R.errN.toLocaleString()} cases to check is too many, so the search was not run (limit ${MAX_CASES.toLocaleString()}). Shorten the queue or use fixed pieces instead of [ ] groups.`
+  ),'bad');
+  if(R.err) return st(R.err,'bad');
+  if(stopped){
+    if(R.shapes.length||(R.probOnly&&R.okW)){st(L(
+      `중지: 순서 ${R.seqDone}/${R.tot||total}개까지 확인한 결과입니다 (전부는 아닐 수 있음${R.pt?` · ${ptSep(R.pt,R.use15,true,false)}`:''}${R.parSkip?` · 페리티로 제외 ${R.parSkip.toLocaleString()}개`:''}${R.pass===2?' · 줄 삭제 뒤 갈라지는 배치 탐색은 끝나지 않음':R.pass===1.5?' · 1.5차 탐색은 끝나지 않음':''})`,
+      `Stopped: results through order ${R.seqDone}/${R.tot||total} (may not be complete${R.pt?` · ${ptSep(R.pt,R.use15,false,false)}`:''}${R.parSkip?` · ${R.parSkip.toLocaleString()} excluded by parity`:''}${R.pass===2?' · the split-after-clear search did not finish':''})`
+    ),'ok');if(!R.probOnly){showSols(R);saveResult(R);}}
+    else{st(L('중지했습니다.','Stopped.'));}
+    return;
+  }
+  if(R.probOnly&&R.okW){
+    st(L(
+      `${R.ns.slice().sort((a,b)=>a-b).join('·')}피스 PC 성공 확률 ${pct(R.okW/R.doneW)} (순서 ${R.seqDone}가지 중 ${R.okN}가지) · 페리티로 제외한 조합 ${R.parSkip||0}개 · ${sec.toFixed(1)}초${ptK(R)}${okK(R)} · 확률만 계산(해 목록 없음)`,
+      `${R.ns.slice().sort((a,b)=>a-b).join('/')}-piece PC success ${pct(R.okW/R.doneW)} (${R.okN}/${R.seqDone} orders) · ${R.parSkip||0} excluded by parity · ${sec.toFixed(1)}s${ptE(R)}${okE(R)} · probability only (no solution list)`
+    ),'ok');
+    return;
+  }
+  if(R.shapes.length){
+    st(L(
+      `${R.ns.slice().sort((a,b)=>a-b).join('·')}피스 PC 성공 확률 ${pct(R.okW/R.doneW)} (순서 ${R.seqDone}가지 중 ${R.okN}가지) · 서로 다른 모양 ${R.shapes.length}개 · 페리티로 제외한 조합 ${R.parSkip||0}개 · ${sec.toFixed(1)}초${ptK(R)}${okK(R)}`,
+      `${R.ns.slice().sort((a,b)=>a-b).join('/')}-piece PC success ${pct(R.okW/R.doneW)} (${R.okN}/${R.seqDone} orders) · ${R.shapes.length} distinct shapes · ${R.parSkip||0} excluded by parity · ${sec.toFixed(1)}s${ptE(R)}${okE(R)}`
+    ),'ok');
+    showSols(R);saveResult(R);
+  } else{st(L(`해가 없습니다. 넥스트를 늘리거나 홀드·스핀·180°를 켜보세요. (${sec.toFixed(1)}초${ptK(R)}${R.parSkip?` · 페리티로 제외 ${R.parSkip.toLocaleString()}개`:''})`,`No solution. Try a longer next queue, or enable hold/spin/180°. (${sec.toFixed(1)}s${ptE(R)}${R.parSkip?` · ${R.parSkip.toLocaleString()} excluded by parity`:''})`),'bad');}
+}
+// The search runs in a Web Worker built from this page's own engine code (ENGINE_START..ENGINE_END),
+// so the page stays responsive and the search gets the whole thread. Falls back to the main thread if Workers are unavailable.
+function workerMain(){
+  let o=null,gen=null,stopFlag=false,T0=0;
+  const post=m=>self.postMessage(m);
+  function finish(stopped){
+    try{post({type:'done',stopped,snap:snapshot(o),sec:(performance.now()-T0)/1000});}
+    catch(err){post({type:'err',msg:String(err&&err.message||err)});}
+    o=null;gen=null;
+  }
+  function step(){
+    if(!o) return;
+    if(stopFlag) return finish(true);
+    try{
+      const s=performance.now();let done=false;
+      while(performance.now()-s<60){if(gen.next().done){done=true;break;}}
+      if(done) return finish(false);
+      post({type:'p',pt:passTimes(o),tot:o.seqsN||0,parSkip:(o.parSkip||0)+(o.parPrune||0),pass:o.pass,curN:o.curN,seqDone:o.seqDone,seqDone2:o.seqDone2,seqDone15:o.seqDone15,use15:!!o.use15,tcount:o.tcount||0});
+      setTimeout(step,0);
+    }catch(err){post({type:'err',msg:String(err&&err.message||err)});o=null;gen=null;}
+  }
+  self.onmessage=e=>{
+    const m=e.data;
+    if(m.type==='stop'){stopFlag=true;return;}
+    if(m.type!=='run') return;
+    try{
+      const seqs=buildSeqs(parseQ(m.q));
+      o={rows0:m.rows0,seqs,hold0:m.hold0,useHold:m.useHold,u180:m.u180,spin:m.spin,parity:m.parity,pmask:m.pmask,use15:m.use15,skip15:m.skip15,rmode:m.rmode,alg15:m.alg15,max:m.max,H:m.H,probOnly:m.probOnly,nodes:0,curN:0,seqDone:0};
+      gen=search(o);stopFlag=false;T0=performance.now();
+      setTimeout(step,0);
+    }catch(err){post({type:'err',msg:String(err&&err.message||err)});o=null;gen=null;}
+  };
+  post({type:'ready'});
+}
+function makeWorker(){
+  if(W||wFail) return W;
+  try{
+    const src=document.getElementById('app').textContent;
+    const a=src.indexOf('//ENGINE'+'_START'), b=src.indexOf('//ENGINE'+'_END');
+    if(a<0||b<0) throw new Error('engine');
+    const code='"use strict";\n'+src.slice(a,b)+'\n('+workerMain.toString()+')();';
+    W=new Worker(URL.createObjectURL(new Blob([code],{type:'text/javascript'})));
+    W.onmessage=e=>{
+      wAlive=true;const m=e.data;
+      if(m.type==='p'){if(running) st(progText(m));}
+      else if(m.type==='done') finishRun(m.snap,m.stopped,m.sec);
+      else if(m.type==='err'){stopRun();stopHandler=null;pending=null;st(m.msg,'bad');}
+    };
+    W.onerror=ev=>{
+      // a Worker that never started (blocked / unsupported): drop it and let the pending run continue on the main thread
+      if(!wAlive){wFail=true;try{W.terminate();}catch(_){}W=null;if(pending){const p=pending;pending=null;runMain(p.P,p.seqs);}}
+      else{stopRun();stopHandler=null;st(L('탐색 중 오류가 발생했습니다.','An error occurred during the search.'),'bad');}
+      if(ev&&ev.preventDefault) ev.preventDefault();
+    };
+  }catch(err){wFail=true;W=null;}
+  return W;
+}
+let pending=null,curO=null;
+function runWorker(P,seqs){
+  const w=makeWorker();if(!w) return false;
+  pending={P,seqs};
+  stopHandler=()=>{$('stop').textContent=L('중지 중…','Stopping…');w.postMessage({type:'stop'});};
+  w.postMessage({type:'run',...P});
+  return true;
+}
+// Fallback: same search, driven in small time slices on the main thread
+function runMain(P,seqs){
+  pending=null;
+  const o={rows0:P.rows0,seqs,hold0:P.hold0,useHold:P.useHold,u180:P.u180,spin:P.spin,parity:P.parity,pmask:P.pmask,use15:P.use15,skip15:P.skip15,rmode:P.rmode,alg15:P.alg15,max:P.max,H:P.H,probOnly:P.probOnly,nodes:0,curN:0,seqDone:0};
+  curO=o;gen=search(o);running=true;$('go').style.display='none';$('stop').style.display='';
+  const t0=performance.now();
+  stopHandler=()=>{stopRun();const R=snapshot(o);stopHandler=null;finishRun(R,true,0);};
+  (function tick(){
+    if(!running) return;
+    const s=performance.now();let done=false;
+    while(performance.now()-s<14){if(gen.next().done){done=true;break;}}
+    if(done){finishRun(snapshot(o),false,(performance.now()-t0)/1000);return;}
+    st(progText({...o,pt:passTimes(o),parSkip:(o.parSkip||0)+(o.parPrune||0),tot:o.seqsN||0}));
+    setTimeout(tick,0);
+  })();
+}
+$('go').onclick=()=>{
+  minOnly=false;
+  let seqs;
+  try{seqs=buildSeqs(parseQ($('q').value));}catch(e){return st(e.message,'bad');}
+  if(!seqs.len) return st(L('넥스트를 입력하세요. (I O T S Z J L, [ ] 안은 순서 무관)','Enter a next queue. (I O T S Z J L, [ ] for any order)'),'bad');
+  const rows0=toRows();
+  const f=rows0.reduce((a,v)=>a+popc(v),0);
+  if(f%2) return st(L('블록 수가 홀수라 퍼펙트 클리어가 불가능합니다. (4n + 채운 칸 = 10의 배수여야 해요)','An odd cell count can\'t perfect clear. (4n + filled cells must be a multiple of 10)'),'bad');
+  // only the first pieces that can affect the PC matter (hold on: n+1): cut the queue now so every shown count is the real one
+  {let need=0;for(let n=1;n<=seqs.len;n++) if((f+4*n)%10===0&&(f+4*n)/10===Math.min(H,MAXL)) need=Math.max(need,Math.min($('uh').checked?n+1:n,seqs.len));
+   seqs=seqs.truncate(need);effLen=need;}
+  runKey=boardKey();$('res').style.display='none';$('fmbox').style.display='none';multi=seqs.n>1;total=seqs.n;lastRows0=rows0.slice();
+  const P={q:$('q').value,rows0,hold0:'',useHold:$('uh').checked,u180:$('u180').checked,spin:$('usp').checked,parity:parOn(),pmask:parMask(),use15:$('u15').checked,skip15:$('s15').checked,rmode:$('r15').value,alg15:$('a15').checked?'two':'old',max:$('po').checked?1:Infinity,H,probOnly:$('po').checked};
+  running=true;$('go').style.display='none';$('stop').style.display='';$('stop').textContent=L('중지','Stop');
+  st(L(`탐색 준비 중… (앞 ${effLen}피스 기준 ${seqs.n.toLocaleString()}가지)`,`Preparing… (first ${effLen} pieces, ${seqs.n.toLocaleString()} cases)`));
+  if(!runWorker(P,seqs)) runMain(P,seqs);
+};
+
+//FUMEN_START
+// Fumen (v115) export: one page per solution, field = the finished stack coloured by piece, comment = "success % : piece order".
+const FM_ALPHA='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+const FM_COLOR={I:1,L:2,O:3,Z:4,T:5,J:6,S:7,X:8};
+function fumenEncode(pages){
+  const out=[];let prev=new Array(240).fill(0),prevComment='';
+  const push=(v,n)=>{for(let i=0;i<n;i++){out.push(FM_ALPHA[v%64]);v=Math.floor(v/64);}};
+  const emit=(pg,first)=>{
+    const esc=pg.comment==null?null:escape(pg.comment), changed=esc!==null&&esc!==prevComment;
+    push((first?30720:0)+(changed?61440:0),3);
+    if(changed){
+      push(esc.length,2);
+      for(let a=0;a<esc.length;a+=4){let v=0,m=1;for(let b=0;b<4;b++){v+=(a+b<esc.length?esc.charCodeAt(a+b)-32:0)*m;m*=96;}push(v,5);}
+      prevComment=esc;
+    }
+  };
+  pages.forEach((pg,i)=>{
+    const f=pg.field;let k=0;
+    if(f.every((v,j)=>v===prev[j])) push(8*240+239,2),push(0,1);   // field unchanged (no repeat pages)
+    else while(k<240){
+      const diff=f[k]-prev[k];let run=1;
+      while(k+run<240&&f[k+run]-prev[k+run]===diff) run++;
+      push((diff+8)*240+(run-1),2);k+=run;
+    }
+    emit(pg,i===0);
+    // the next page's field is stored as a difference from THIS field after its completed rows are cleared (rows 0..22; row 23 = garbage row, untouched)
+    const kept=[];for(let r=0;r<23;r++){const row=f.slice(r*10,r*10+10);if(!row.every(v=>v)) kept.push(row);}
+    const cleared=new Array(240).fill(0);
+    kept.forEach((row,j)=>{const r=23-kept.length+j;for(let x=0;x<10;x++) cleared[r*10+x]=row[x];});
+    for(let x=0;x<10;x++) cleared[230+x]=f[230+x];
+    prev=cleared;
+  });
+  return 'v115@'+out.join('');
+}
+// boardRows: rows0 of the searched board (BUF rows of padding on top), H rows tall, bottom row = last
+function fumenFromShapes(list,label,rows0,H,BUFROWS){
+  const pages=list.map(s=>{
+    const field=new Array(240).fill(0);
+    const set=(x,y,c)=>{const r=22-(H-1-y);if(r>=0&&r<=22&&x>=0&&x<10) field[r*10+x]=c;};   // y: 0 = top of the H-row board
+    for(let y=0;y<H;y++) for(let x=0;x<10;x++) if((rows0[BUFROWS+y]>>x)&1) set(x,y,FM_COLOR.X);
+    for(const q of s.pic) for(const [x,y] of q.cells) set(x,y,FM_COLOR[q.t]);
+    return {field,comment:label(s)+' : '+s.q};
+  });
+  return fumenEncode(pages);
+}
+// first page's field of a v115 code -> 240 cell values (row 0 = top ... row 22 = floor row, row 23 = garbage), or null
+function fumenFirstField(code){
+  const m=String(code).replace(/\s+/g,'').match(/[vV]115@([A-Za-z0-9+\/?]+)/);
+  if(!m) return null;
+  const s=m[1].replace(/\?/g,'');let p=0;
+  const pop=n=>{let v=0;for(let i=0;i<n;i++){const k=FM_ALPHA.indexOf(s[p++]);if(k<0) throw new Error('bad');v+=k*Math.pow(64,i);}return v;};
+  const f=new Array(240).fill(0);let idx=0;
+  while(idx<240){
+    const v=pop(2),diff=Math.floor(v/240)-8,run=v%240+1;
+    for(let k=0;k<run&&idx<240;k++) f[idx++]=diff;
+  }
+  return f;
+}
+//FUMEN_END
+let lastR=null,minOnly=false,lastRows0=null;
+// ---- 저장된 결과: 보드 모양·옵션이 같으면 큐를 바꿔도 마지막 결과를 그대로 다시 보여줌 ----
+const SAVED=new Map();
+const parMask=()=>({v:$('parV').checked,c:$('parC').checked,k:$('parK').checked});
+const parOn=()=>{const m=parMask();return m.v||m.c||m.k;};
+const boardKey=()=>toRows().join()+'|'+H+'|'+$('uh').checked+'|'+$('u180').checked+'|'+$('usp').checked+'|'+parOn()+'/'+$('parV').checked+$('parC').checked+$('parK').checked+'|'+$('po').checked+'|'+$('u15').checked+$('r15').value+$('a15').checked+$('s15').checked+'|'+$('q').value.replace(/\s+/g,'').toUpperCase();
+let runKey=null;
+function saveResult(R){
+  if(runKey===null||R.probOnly||!R.shapes||!R.shapes.length) return;
+  SAVED.delete(runKey);SAVED.set(runKey,{R,rows0:lastRows0&&lastRows0.slice(),multi,total,effLen,statusText:$('status').textContent,statusCls:$('status').className});
+  if(SAVED.size>20) SAVED.delete(SAVED.keys().next().value);
+}
+function restoreSaved(){
+  if(running) return;
+  const e=SAVED.get(boardKey());
+  if(!e){ if(lastR&&lastKeyShown!==null&&lastKeyShown!==boardKey()){$('res').style.display='none';} return; }
+  if(lastKeyShown===boardKey()&&$('res').style.display==='') return;   // already showing it
+  minOnly=false;multi=e.multi;total=e.total;effLen=e.effLen;lastRows0=e.rows0;
+  st(e.statusText,e.statusCls);showSols(e.R);
+}
+let lastKeyShown=null;
+['uh','u180','usp','parV','parC','parK','po','u15','r15','a15','s15'].forEach(id=>$(id).addEventListener('change',()=>restoreSaved()));
+const showParWarn=()=>{$('warnPar').style.display=parOn()?'':'none';};
+['parV','parC','parK'].forEach(id=>$(id).addEventListener('change',showParWarn));
+showParWarn();
+$('q').addEventListener('input',()=>restoreSaved());
+$('rnd').addEventListener('click',()=>restoreSaved());
+
+function showSols(R){
+  lastR=R;lastKeyShown=boardKey();$('res').style.display='';
+  let arr=R.shapes.slice();
+  if(minOnly) arr=arr.filter(s=>s.mn).sort((a,b)=>a.mn-b.mn);
+  else arr.sort((a,b)=>b.w-a.w||b.sp-a.sp);   // likelier first, then more spins
+  shapes=arr;
+  $('mn').style.display=R.minN?'':'none';
+  $('mn').textContent=minOnly?L('전체 해법 보기','Show all solutions'):L(`최소 해법 ${R.minN}개만 보기`,`Show minimal ${R.minN} solution(s) only`);
+  $('mnh').textContent=R.minN?(minOnly?L(
+    `성공한 순서의 ${pct(R.minCov/R.minTot)}를 ${R.minN}개로 모두 커버합니다. 앞쪽 해법일수록 더 많은 순서를 담당해요. (그리디 근사라 이보다 더 적게 커버할 방법이 있을 수 있습니다.)`,
+    `These ${R.minN} solutions together cover ${pct(R.minCov/R.minTot)} of successful orders. Earlier ones cover more. (Greedy approximation — a smaller cover may exist.)`
+  ):''):(R.minSkipped?L('순서가 너무 많아 최소 해법 계산은 생략했습니다.','Too many orders — the minimal-solution calculation was skipped.'):'');
+  const box=$('sols');box.innerHTML='';
+  shapes.forEach((s,i)=>{
+    const b=document.createElement('button');b.className='sol';
+    b.innerHTML=(minOnly?`<b>#${s.mn} +${pct(s.mg/R.minTot)}</b> `:`<b>${pct(s.w/R.doneW)}</b> `)+s.steps.map(p=>`<span class="pc${p.used?' h':''}${p.spin?' s':''}" style="background:${COLORS[p.t]}">${p.t}</span>`).join('');
+    b.onclick=()=>pick(i);box.appendChild(b);
+  });
+  pick(0);
+}
+$('mn').onclick=()=>{minOnly=!minOnly;if(lastR) showSols(lastR);};
+function pick(i){
+  cur=shapes[i].steps;curQ=shapes[i].q;step=0;stopPlay();
+  [...$('sols').children].forEach((b,j)=>b.classList.toggle('on',i===j));
+  draw();
+}
+function draw(){
+  size(vw);const c=vw.getContext('2d');grid(c);
+  if(step>=cur.length){
+    $('cap').textContent='PERFECT CLEAR!';$('cap').style.color='var(--mint)';return;
+  }
+  const s=cur[step];
+  s.before.slice(BUF).forEach((v,y)=>{for(let x=0;x<COLS;x++)if((v>>x)&1)cell(c,x,y,COLORS.G);});
+  s.ghost.forEach(g=>g.cs.forEach(([x,y])=>cell(c,x,y-BUF,COLORS[g.t],.3)));
+  s.cs.forEach(([x,y])=>cell(c,x,y-BUF,COLORS[s.t]));
+  $('cap').style.color='';
+  $('cap').textContent=`${step+1}/${cur.length}  ${s.t}${s.used?L(' (홀드 사용)',' (used hold)'):''}${s.spin?L(' (스핀·틱)',' (spin/tuck)'):''}`+(multi?L('  · 큐 ','  · queue ')+curQ:'');
+}
+$('nx').onclick=()=>{stopPlay();if(cur&&step<cur.length){step++;draw();}};
+$('pv').onclick=()=>{stopPlay();if(cur&&step>0){step--;draw();}};
+function stopPlay(){clearInterval(timer);timer=null;$('pl').textContent=L('재생','Play');}
+$('pl').onclick=()=>{
+  if(timer) return stopPlay();
+  if(!cur) return;
+  if(step>=cur.length) step=0;
+  draw();$('pl').textContent=L('정지','Pause');
+  timer=setInterval(()=>{ if(step<cur.length){step++;draw();} else stopPlay(); },700);
+};
+$('fm').onclick=()=>{
+  if(!shapes.length||!lastR||!lastRows0) return;
+  const code=fumenFromShapes(shapes,s=>minOnly?pct(s.mg/lastR.minTot):pct(s.w/lastR.doneW),lastRows0,H,BUF);
+  const box=$('fmbox');box.value=code;box.style.display='';box.select();
+  const done=()=>{$('fm').textContent=L('복사됨','Copied');setTimeout(()=>{$('fm').textContent=L('후멘 복사','Copy fumen');},1500);};
+  if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(code).then(done,()=>{});
+  else{try{document.execCommand('copy');done();}catch(_){}}
+};
+$('fmload').onclick=()=>{
+  if(running) return;
+  let f;try{f=fumenFirstField($('fmin').value);}catch(_){f=null;}
+  if(!f) return st(L('후멘 코드(v115@…)를 읽지 못했습니다.','Could not read that fumen code (v115@…).'),'bad');
+  let top=-1;for(let r=0;r<23&&top<0;r++) for(let x=0;x<10;x++) if(f[r*10+x]) {top=r;break;}
+  if(top<0) return st(L('첫 페이지가 비어 있습니다.','The first page is empty.'),'bad');
+  const h=23-top;
+  if(h>12) return st(L(`쌓인 높이가 ${h}줄이라 12줄을 넘어 가져올 수 없습니다.`,`The stack is ${h} rows high; the maximum is 12.`),'bad');
+  setH(Math.max(2,h));resetBoard();
+  for(let y=0;y<H;y++){const r=23-H+y;for(let x=0;x<10;x++) if(f[r*10+x]) board[y][x]=1;}
+  drawEd();restoreSaved();
+  if($('res').style.display==='none') st(L(`후멘 첫 페이지를 가져왔습니다. (높이 ${H}줄)`,`Imported the first fumen page. (${H} rows)`),'ok');
+};
+let LANG='ko';
+const STATIC={
+  subp:['Tetrion의 SRS 회전·킥 규칙(180° 포함)으로 퍼펙트 클리어를 찾습니다.','Finds perfect clears using Tetrion’s SRS rotation/kick rules (incl. 180°).'],
+  h2board:['보드','Board'],
+  hint6:['퍼클 탐색은 아래쪽 8줄까지만 지원합니다. 9줄 이상 쌓인 보드는 8줄 안에서 끝나는 해만 찾아요.','PC search only covers the bottom 8 rows. On a taller board, only solutions that finish within 8 rows are found.'],
+  hintDrag:['칸을 누르거나 드래그해서 블록을 채우고 지웁니다. 맨 아래가 바닥입니다.','Tap or drag cells to fill/clear blocks. The bottom row is the floor.'],
+  lblHeight:['높이','Height'],
+  clr:['비우기','Clear'],
+  h2piece:['피스','Pieces'],
+  lblNext:['넥스트','Next'],
+  rnd:['랜덤 2백','Random bag×2'],
+  lblUseHold:['홀드 사용','Use hold'],
+  lblRot180:['180° 회전','180° rotation'],
+  lblSpin:['스핀·틱 포함','Include spins/tucks'],
+  lblParity:['페리티 검사','Parity check'],
+  warnPar:['⚠ 페리티 검사는 보드와 큐에 따라 속도가 그대로이거나 오히려 느려질 수 있습니다. 켜기 전후 시간을 비교해 보고 쓰세요.','⚠ Parity checks can leave the speed unchanged or even make it slower, depending on board and queue. Compare times with and without.'],
+  gtBase:['기본','Basics'],
+  gtStage:['탐색 단계','Search stages'],
+  hintBracket:['예: [IOTSZJL]3!, [TIL]!JSZ — 자세한 문법은 ⓘ를 눌러 보세요.','e.g. [IOTSZJL]3!, [TIL]!JSZ — tap ⓘ for the full syntax.'],
+  lblParV:['버티컬','Vertical'],
+  lblParC:['4색','4-colour'],
+  lblParK:['체커보드(1차만)','Checkerboard (pass 1 only)'],
+  lbl15:['1.5차','Pass 1.5'],
+  lblS15:['1.5차 푼 큐 2차 생략','Skip pass 2 for orders solved in 1.5'],
+  lblA15:['2단계 방식(실험)','Two-stage (experimental)'],
+  lblProbOnly:['확률만 (빠름)','Probability only (fast)'],
+  fm:['후멘 복사','Copy fumen'],
+  fmload:['가져오기','Import'],
+  go:['퍼펙트 클리어 찾기','Find perfect clear'],
+  h2result:['결과','Result']
+};
+const HELP={
+  hQueue:[
+   '<b>넥스트 문법</b><ul>'+
+   '<li><code>TILJSZO</code> 적은 순서 그대로 나옵니다.</li>'+
+   '<li><code>[TIL]</code> 묶음입니다. 안의 피스는 띄어 써도 되고, 적은 순서대로 나옵니다.</li>'+
+   '<li><code>[TIL]!</code> 묶음 안을 <b>랜덤 순서</b>로 섞습니다.</li>'+
+   '<li><code>[IOTSZJL]3</code> 묶음에서 <b>앞의 3개</b>만 씁니다. <code>[IOTSZJL]3!</code>는 3개를 무작위로 뽑고 순서도 랜덤입니다.</li>'+
+   '<li>묶음 안에 묶음을 넣을 수 있습니다. <code>[[SZ]! [LJ]!]2!</code></li>'+
+   '<li><code>[]</code> 는 7-bag 하나, 곧 <code>[IOTSZJL]!</code> 의 줄임말입니다.</li>'+
+   '<li><code>[TIL]!JSZ</code> 처럼 묶음과 낱개 피스를 이어 쓸 수 있습니다.</li></ul>',
+   '<b>Next syntax</b><ul>'+
+   '<li><code>TILJSZO</code> comes out in the written order.</li>'+
+   '<li><code>[TIL]</code> is a group; spaces inside are fine, written order is kept.</li>'+
+   '<li><code>[TIL]!</code> shuffles the group into a <b>random order</b>.</li>'+
+   '<li><code>[IOTSZJL]3</code> uses only the <b>first 3</b>. <code>[IOTSZJL]3!</code> picks 3 at random, in random order.</li>'+
+   '<li>Groups can nest: <code>[[SZ]! [LJ]!]2!</code></li>'+
+   '<li><code>[]</code> is one 7-bag, short for <code>[IOTSZJL]!</code>.</li>'+
+   '<li>Groups and single pieces can be chained: <code>[TIL]!JSZ</code></li></ul>'],
+  hBase:[
+   '<ul><li><b>홀드 사용</b> 홀드 슬롯으로 피스를 바꿔 쓸 수 있다고 보고 찾습니다. 끄면 큐 순서대로만 놓습니다.</li>'+
+   '<li><b>180° 회전</b> 180° 회전 입력도 쓸 수 있다고 봅니다.</li>'+
+   '<li><b>스핀·틱 포함</b> 스핀이나 틱(좁은 곳에 밀어 넣기)이 필요한 배치도 허용합니다. 끄면 그런 조작이 필요 없는 배치만 씁니다.</li>'+
+   '<li><b>확률만</b> 큐마다 성공 여부만 확인하고 해 목록과 최소 해법은 만들지 않습니다. 빠릅니다.</li></ul>',
+   '<ul><li><b>Use hold</b> Pieces may be swapped through the hold slot. Off: pieces are placed in queue order only.</li>'+
+   '<li><b>180° rotation</b> 180° rotation inputs are allowed.</li>'+
+   '<li><b>Include spins/tucks</b> Allows placements that need a spin or a tuck. Off: only placements that need neither.</li>'+
+   '<li><b>Probability only</b> Only checks whether each order succeeds; no solution list or minimal set. Fast.</li></ul>'],
+  hPar:[
+   '불가능한 배치를 미리 걸러서 속도를 높입니다. 필요조건만 검사해서 <b>진짜 해를 버리지는 않습니다.</b> 아무것도 켜지 않으면 검사하지 않습니다.<ul>'+
+   '<li><b>버티컬</b> 칸을 열 번호의 홀짝으로 나눠 셉니다. 값이 작아서 가장 쌉니다.</li>'+
+   '<li><b>4색</b> 열 번호를 4로 나눈 나머지로 나눠 셉니다. 버티컬이 못 보는 정보를 더합니다.</li>'+
+   '<li><b>체커보드</b> 체커판 무늬로 나눠 셉니다. 줄이 지워지면 성립하지 않아서 1차에서만 씁니다.</li></ul>'+
+   '버티컬을 먼저 검사하고 통과한 것만 나머지를 검사합니다. 보드와 큐에 따라 효과가 크게 달라서, <b>빨라지지 않거나 오히려 느려질 수 있습니다.</b> 검사 자체에도 시간이 들기 때문입니다.',
+   'Prunes impossible layouts early. Only necessary conditions are checked, so <b>real solutions are never discarded.</b> Nothing selected means no parity check.<ul>'+
+   '<li><b>Vertical</b> Counts cells by column parity. Smallest values, so the cheapest.</li>'+
+   '<li><b>4-colour</b> Counts cells by column number mod 4. Adds information vertical cannot see.</li>'+
+   '<li><b>Checkerboard</b> Counts cells by checkerboard colour. Not valid once lines clear, so pass 1 only.</li></ul>'+
+   'Vertical runs first; only layouts that pass go on to the others. The effect varies a lot with board and queue, and it <b>may not help or may even slow things down</b>, since the checks themselves cost time.'],
+  hStage:[
+   '<ul><li><b>1차</b> 줄이 지워지지 않은 것처럼 피스가 이어진 배치로 보드를 채우는 경우를 찾습니다. 가장 빠릅니다.</li>'+
+   '<li><b>2차</b> 중간에 줄이 지워져 피스가 갈라지는 배치까지 찾습니다. 가장 완전하고 가장 느립니다.</li>'+
+   '<li><b>1.5차</b> 2차 전에 "정한 줄을 먼저 한 번에 지운다"는 경우만 빠르게 찾아봅니다. 줄을 두 번 이상 나눠 지우는 해는 2차가 찾습니다.<br>줄 선택: 짝수 줄(아래에서 2·4번째), 홀수 줄(1·3번째), 짝+홀, 모든 부분집합(느림).</li>'+
+   '<li><b>1.5차 푼 큐 2차 생략</b> 1.5차에서 풀린 큐는 2차를 건너뜁니다. 확률은 같지만 <b>해 목록이 줄 수 있습니다.</b></li>'+
+   '<li><b>2단계 방식(실험)</b> 1.5차를 "그 줄을 먼저 채우고 지운 뒤 나머지를 1차처럼 푸는" 다른 방법으로 계산합니다. 결과는 같고 지금은 더 느립니다.</li></ul>'+
+   '결과 문구의 <code>성공 순서 a → b → c</code> 는 1차·1.5차·2차까지 풀린 큐 수입니다.',
+   '<ul><li><b>Pass 1</b> Fills the board with contiguous pieces, as if no line cleared. Fastest.</li>'+
+   '<li><b>Pass 2</b> Also covers layouts where mid-way line clears split pieces. Most complete, slowest.</li>'+
+   '<li><b>Pass 1.5</b> Before pass 2, quickly tries only "the chosen rows are cleared first, in one go". Solutions that clear lines in several rounds are left to pass 2.<br>Row choice: even rows (2nd/4th from the bottom), odd rows (1st/3rd), both, all subsets (slow).</li>'+
+   '<li><b>Skip pass 2 for orders solved in 1.5</b> Orders solved in pass 1.5 skip pass 2. Probability is the same but <b>the solution list may shrink.</b></li>'+
+   '<li><b>Two-stage (experimental)</b> Computes pass 1.5 another way: fill those rows first, remove them, then solve the rest like pass 1. Same results, currently slower.</li></ul>'+
+   'In the result line, <code>successful orders a → b → c</code> is the number of orders solved after pass 1, 1.5 and 2.']
+};
+const L=(ko,en)=>LANG==='en'?en:ko;
+document.addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('button.i');if(!b) return;
+  const box=$(b.dataset.h);if(!box) return;
+  const open=box.hidden;box.hidden=!open;b.setAttribute('aria-expanded',open?'true':'false');
+});
+function applyLang(){
+  $('lang').textContent=LANG==='en'?'한국어':'EN';
+  for(const id in STATIC){const el=$(id);if(el) el.textContent=STATIC[id][LANG==='en'?1:0];}
+  for(const id in HELP){const el=$(id);if(el) el.innerHTML=HELP[id][LANG==='en'?1:0];}   // constant strings only
+  for(const b of document.querySelectorAll('button.i')) b.setAttribute('aria-label',L('설명 보기','Show help'));
+  $('hm').setAttribute('aria-label',L('높이 줄이기','Decrease height'));
+  $('fmin').setAttribute('placeholder',L('후멘 코드 붙여넣기 (v115@…)','Paste a fumen code (v115@…)'));
+  $('hp').setAttribute('aria-label',L('높이 늘리기','Increase height'));
+  $('hint6').style.display=H>MAXL?'':'none';
+  if(!running) $('stop').textContent=L('중지','Stop');
+  $('pl').textContent=timer?L('정지','Pause'):L('재생','Play');
+  if(lastR) showSols(lastR);
+}
+$('lang').onclick=()=>{LANG=LANG==='en'?'ko':'en';applyLang();};
+applyLang();
+resetBoard();
+window.__test={search,placements,snapshot};
+})();
+</script>
+</body>
+</html>
